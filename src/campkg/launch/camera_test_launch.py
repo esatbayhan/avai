@@ -1,5 +1,8 @@
-from launch import LaunchDescription
+from os.path import expanduser
+
 from launch_ros.actions import Node
+
+from launch import LaunchDescription
 
 
 def generate_launch_description():
@@ -12,7 +15,7 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 {
-                    'camera_id': '/home/ubuntu/Downloads/test.mp4',
+                    "camera_id": f"{expanduser('~')}/data/test.mp4",
                     "fps": 30
                 }
             ]

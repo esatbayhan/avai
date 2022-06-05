@@ -1,3 +1,6 @@
+from datetime import datetime
+from os.path import expanduser
+
 import rclpy
 import torch
 from cv2 import COLOR_BGR2RGB, COLOR_RGB2BGR, cvtColor, imshow, waitKey
@@ -9,7 +12,6 @@ from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64MultiArray
-from datetime import datetime
 
 
 class Detection(Node):
@@ -30,7 +32,7 @@ class Detection(Node):
         self.add_on_set_parameters_callback(self.init_parameters)
         self.declare_parameter("subscriber_topic_name", "frames_processed")
         self.declare_parameter("publisher_topic_name", "bounding_boxes")
-        self.declare_parameter("model", "/models/yolov5s_cones.pt")
+        self.declare_parameter("model", f"{expanduser('~')}/models/yolov5s_cones.pt")
         self.declare_parameter("is_displaying", self.is_displaying)
 
     def init_subscriber(self, topic_name: str) -> bool:
