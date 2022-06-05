@@ -36,20 +36,6 @@ sudo apt-get install -yq \
     python3-vcstool \
     git
 
-echo "[Install additional tools]"
-source ~/.bashrc
-sudo apt-get install -yq graphicsmagick-libmagick-dev-compat
-sudo apt-get install -yq \
-    ros-foxy-gazebo-* \
-    ros-foxy-cartographer \
-    ros-foxy-cartographer-ros \
-    ros-foxy-navigation2 \
-    ros-foxy-nav2-bringup \
-    ros-foxy-dynamixel-sdk \
-    ros-foxy-turtlebot3-msgs \
-    ros-foxy-turtlebot3 \
-    python3-rosdep2
-
 echo "[Set the ROS evironment]"
 sh -c "echo \"alias sb='source ~/.bashrc'\" >> ~/.bashrc"
 
