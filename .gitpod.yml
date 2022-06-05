@@ -8,7 +8,10 @@ tasks:
 
   - name: Addition Tools Installation
     before: gp sync-await ros_installation
-    init: |
-      source ~/.bashrc
-      bash /workspace/avai/scripts/install_tools.sh
+    init: bash /workspace/avai/scripts/install_tools.sh
     command: gp sync-done tools_installation
+
+  - name: Initial Build Workspace
+    before: gp sync-await tools_installation
+    init: bash /workspace/avai/scripts/initial_build.sh
+    command: gp sync-done initial_build
