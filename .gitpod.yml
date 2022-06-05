@@ -1,4 +1,4 @@
-image: gitpod/workspace-full-vnv
+image: gitpod:workspace-full-vnv
 
 # List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
 tasks:
