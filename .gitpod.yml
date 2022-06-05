@@ -6,6 +6,7 @@ tasks:
     command: |
       bash /workspace/avai/install_ros.sh
       source ~/.bashrc
+      sudo apt-get install -yq graphicsmagick-libmagick-dev-compat
       sudo apt-get install -yq \
         ros-foxy-gazebo-* \
         ros-foxy-cartographer \
