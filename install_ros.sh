@@ -34,19 +34,7 @@ sudo apt-get install -yq \
     python3-argcomplete \
     python3-colcon-common-extensions \
     python3-vcstool \
-    python3-rosdep2 \
     git
-
-echo "[Install ROS2 Tools]"
-sudo apt-get install -yq \
-    ros-foxy-gazebo-* \
-    ros-foxy-cartographer \
-    ros-foxy-cartographer-ros \
-    ros-foxy-navigation2 \
-    ros-foxy-nav2-bringup \
-    ros-foxy-dynamixel-sdk \
-    ros-foxy-turtlebot3-msgs \
-    ros-foxy-turtlebot3
 
 echo "[Set the ROS evironment]"
 sh -c "echo \"alias sb='source ~/.bashrc'\" >> ~/.bashrc"
@@ -59,5 +47,3 @@ sh -c "echo \"source /opt/ros/$name_ros_version/setup.bash\" >> ~/.bashrc"
 sh -c "echo \"source $path_colcon_workspace/install/local_setup.bash\" >> ~/.bashrc"
 
 sh -c "echo \"export ROS_DOMAIN_ID=30\" >> ~/.bashrc"
-
-
