@@ -30,7 +30,7 @@ class Detection(Node):
         self.add_on_set_parameters_callback(self.init_parameters)
         self.declare_parameter("subscriber_topic_name", "frames_processed")
         self.declare_parameter("publisher_topic_name", "bounding_boxes")
-        self.declare_parameter("model", "/home/ubuntu/models/yolov5s_cones.pt")
+        self.declare_parameter("model", "/models/yolov5s_cones.pt")
         self.declare_parameter("is_displaying", self.is_displaying)
 
     def init_subscriber(self, topic_name: str) -> bool:
