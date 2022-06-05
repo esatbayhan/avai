@@ -53,4 +53,4 @@ CATKIN_IGNORE
 # Colcon workspace
 install/
 build/
-logs/
+log/
