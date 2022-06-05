@@ -6,3 +6,4 @@ pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y
 pip install --upgrade torch torchvision tabulate
+cb
