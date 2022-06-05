@@ -2,14 +2,10 @@ image: gitpod/workspace-full-vnc
 
 # List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
 tasks:
-  - name: ROS Base Installation
+  - name: ROS Installation
     command: |
       bash /workspace/avai/install_ros.sh
-      gp sync-done ros
-  
-  - name: Additional Tools Installation
-    command: |
-      gp sync-await ros
+      source ~/.bashrc
       sudo apt-get install -yq \
         ros-foxy-gazebo-* \
         ros-foxy-cartographer \
