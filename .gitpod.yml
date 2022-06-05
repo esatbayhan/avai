@@ -3,4 +3,12 @@ image: gitpod/workspace-full-vnc
 # List the start up tasks. Learn more https://www.gitpod.io/docs/config-start-tasks/
 tasks:
   - name: ROS Installation
-    command: bash /workspace/avai/install_ros.sh
+    init: bash /workspace/avai/install_ros.sh
+    command: gp sync-done ros_installation
+
+  - name: Addition Tools Installation
+    before: gp sync-await ros_installation
+    init: |
+      source ~/.bashrc
+      bash /workspace/avai/scripts/install_tools.sh
+    command: gp sync-done tools_installation
