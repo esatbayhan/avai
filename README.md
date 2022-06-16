@@ -6,10 +6,10 @@
 
 
 # Get started with the simulation:
-- make sure you clone the entire ropo in the following file sturcur: HOME/turtlebot3_ws/src
+- make sure you clone the entire repo in the following file structure: HOME/turtlebot3_ws/src
 - download zip: https://drive.google.com/file/d/1Uj5RQQPWN1KfQzIC3PBE3yP42D1mGnsx/view?usp=sharing
 - inside "HOME/turtlebot3_ws/src/avai/src" unpack the zip (containing other repos + custom simulation files)
-- delete all files in HOME/turtlebot3_ws/ other than the src folder
+- delete all files in HOME/turtlebot3_ws/ other than the "src" folder
 - run the following commands in HOME/turtlebot3_ws/
 
 colcon build
