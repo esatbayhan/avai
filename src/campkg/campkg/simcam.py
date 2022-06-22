@@ -14,7 +14,7 @@ class Simcam(Node):
     def __init__(self):
         super().__init__('simcam')  # init node with name
         self.image_format = "jpg"
-        self.encoding = "rgb8"
+        self.encoding = "bgr8"
         self.publisher_queue_size = 2
         self.subscriber_queue_size = 2
 
