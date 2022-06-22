@@ -14,6 +14,7 @@ class Simcam(Node):
     def __init__(self):
         super().__init__('simcam')  # init node with name
         self.image_format = "jpg"
+        self.encoding = "rgb8"
         self.publisher_queue_size = 2
         self.subscriber_queue_size = 2
 
@@ -75,9 +76,10 @@ class Simcam(Node):
 
     def subscribe(self, image: Image) -> None:
         # Image -> Numpy -> CompressedImage
+
         self.publish(
             self.cv_bridge.cv2_to_compressed_imgmsg(
-                self.cv_bridge.imgmsg_to_cv2(image)))
+                self.cv_bridge.imgmsg_to_cv2(image, self.encoding)))
 
     def publish(self, compressed_image: CompressedImage) -> None:
         if type(compressed_image) != CompressedImage:
