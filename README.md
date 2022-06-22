@@ -12,11 +12,13 @@
 - delete all files in HOME/turtlebot3_ws/ other than the "src" folder
 - run the following commands in HOME/turtlebot3_ws/
 
+```bash
 colcon build
 export TURTLEBOT3_MODEL=waffle_pi
 . install/setup.bash
 ros2 launch turtlebot3_gazebo track_1.launch.py
 ros2 launch perception detector_display_launch.py
 ros2 run turtlebot3_teleop teleop_keyboard
+```
 
 if everything works you can do the same as in this video: https://drive.google.com/file/d/1YtI3s_NveSBI50pj2B6MthdQEDRCGTfG/view?usp=sharing
