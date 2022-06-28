@@ -10,7 +10,7 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
-from sensor_msgs.msg import CompressedImage, Image
+from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64MultiArray
 
 
@@ -30,7 +30,7 @@ class Detection(Node):
         self.cv_bridge = CvBridge()
 
         self.add_on_set_parameters_callback(self.init_parameters)
-        self.declare_parameter("subscriber_topic_name", "camera/image_raw") # topic irl is "frames_processed"
+        self.declare_parameter("subscriber_topic_name", "frames_processed")
         self.declare_parameter("publisher_topic_name", "bounding_boxes")
         self.declare_parameter("model", f"{expanduser('~')}/models/yolov5s_cones.pt")
         self.declare_parameter("is_displaying", self.is_displaying)
@@ -44,10 +44,8 @@ class Detection(Node):
 
         if len(topic_name) == 0:
             return False
-        
-        self.get_logger().info(topic_name)
 
-        return type(self.create_subscription(Image, topic_name, self.subscribe, self.subscriber_queue_size)) == Subscription  # message type irl is compressedImage
+        return type(self.create_subscription(CompressedImage, topic_name, self.subscribe, self.subscriber_queue_size)) == Subscription
 
     def init_publisher(self, topic_name: str) -> bool:
         # ToDo(0) topic names have naming specifications
@@ -123,7 +121,7 @@ class Detection(Node):
         return SetParametersResult(successful=successful)
 
     def subscribe(self, msg) -> None:
-        frame = self.cv_bridge.imgmsg_to_cv2(msg)  # message type irl is compressedImage
+        frame = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
         frame = cvtColor(frame, COLOR_BGR2RGB)
 
         if self.is_logging:
@@ -136,8 +134,8 @@ class Detection(Node):
             self.get_logger().info(f"[DETECTION/TIMEDELTA]{delta.seconds}.{delta.microseconds}")
 
         if self.is_displaying:
-            # cv_frame = cvtColor(result.render()[0], COLOR_RGB2BGR) # color conversion necessary in irl
-            imshow(self.cv_window_name, result.render()[0])
+            cv_frame = cvtColor(result.render()[0], COLOR_RGB2BGR)
+            imshow(self.cv_window_name, cv_frame)
             waitKey(self.cv_wait_ms)
 
         self.publish(result.xywhn[0])
