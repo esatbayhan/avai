@@ -1,4 +1,3 @@
-install/
 build/
+install/
 log/
-**/__pycache__/
