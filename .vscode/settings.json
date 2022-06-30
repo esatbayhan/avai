@@ -1,8 +1,0 @@
-{
-    "files.exclude": {
-        "build/": true,
-        "install/": true,
-        "log/": true,
-        "**/__pycache__/": true,
-    }
-}
