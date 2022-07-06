@@ -2,6 +2,17 @@
     "files.exclude": {
         "build/": true,
         "install/": true,
-        "log/": true
+        "log/": true,
+        "**/__pycache__/": true,
+
+        // gitpod files
+        "scripts/": true,
+        ".gitpod.yml": true,
+
+        // submodules
+        "src/DynamixelSDK": true,
+        "src/turtlebot3": true,
+        "src/turtlebot3_msgs": true,
+        "src/turtlebot3_simulations": true,
     }
 }
