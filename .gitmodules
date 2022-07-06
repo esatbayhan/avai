@@ -10,3 +10,7 @@
 	path = src/turtlebot3_msgs
 	url = https://github.com/ROBOTIS-GIT/turtlebot3_msgs
 	branch = foxy-devel
+[submodule "src/turtlebot3_simulations"]
+	path = src/turtlebot3_simulations
+	url = https://github.com/esatbayhan/turtlebot3_simulations
+	branch = foxy-devel
