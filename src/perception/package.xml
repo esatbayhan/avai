@@ -5,7 +5,7 @@
   <version>0.0.0</version>
   <description>ROS2 Foxy TurtleBot3 Perception Package for the Course Autonomous Vehicles and Artificial Intelligence</description>
   <maintainer email="esat.bayhan@rub.de">Esat Sefa Bayhan</maintainer>
-  <license>MIT</license>
+  <license>ToDo</license>
 
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
