@@ -1,9 +1,5 @@
 # Autonomous Vehicles and Artificial Intelligence
 
-## Packages
-- campkg
-- perception
-
 ## Tips
 ### Clone
 - Clone the project as colcon_ws in your home folder
@@ -12,3 +8,7 @@
 - Make sure pip is installed `sudo apt install python3-pip`
 - Use rosdep to install all dependencies
 - `rosdep install --from-paths src --ignore-src -r -y`
+
+## Packaged
+- campkg
+- perception
