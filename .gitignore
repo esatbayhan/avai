@@ -1,4 +1,8 @@
 build/
 install/
 log/
-.vscode/settings.json
+
+# Submodules without fork
+src/DynamixelSDK/
+src/turtlebot3/
+src/turtlebot3_msgs/
