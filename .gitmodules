@@ -1,4 +1,0 @@
-[submodule "src/DynamixelSDK"]
-	path = src/DynamixelSDK
-	url = https://github.com/ROBOTIS-GIT/DynamixelSDK
-	branch = foxy-devel
