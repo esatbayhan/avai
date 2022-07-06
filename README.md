@@ -2,8 +2,8 @@
 
 ## Tips
 ### Clone
-- Clone the project as colcon_ws in your home folder
-- `git clone https://github.com/esatbayhan/avai ~/colcon_ws`
+- Clone the project with submodules as colcon_ws in your home folder
+- `git clone --recurse-submodules -j8 https://github.com/esatbayhan/avai ~/colcon_ws`
 
 ## Packaged
 - campkg
