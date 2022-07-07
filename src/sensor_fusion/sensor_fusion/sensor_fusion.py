@@ -22,6 +22,9 @@ class SensorFusion(Node):
     ACCURACY_THRESHOLD = 0.4
     WIDTH_THRESHOLD = 0.04
 
+    INCLUDE_MIN = -1
+    INCLUDE_MAX = 1
+
     def __init__(self):
         super().__init__("sensor_fusion")  # init node with name
         self.subscriber_queue_size = 2
@@ -135,24 +138,15 @@ class SensorFusion(Node):
             index = self.pixel_to_index(center_x)
 
             if cone_class == SensorFusion.CONE_CLASS_BLUE:
-                laser_scan_blue.ranges[index-1] = laser_scan.ranges[index-1]
-                laser_scan_blue.intensities[index-1] = laser_scan.intensities[index-1]
-
-                laser_scan_blue.ranges[index] = laser_scan.ranges[index]
-                laser_scan_blue.intensities[index] = laser_scan.intensities[index]
-                
-                laser_scan_blue.ranges[index+1] = laser_scan.ranges[index+1]
-                laser_scan_blue.intensities[index+1] = laser_scan.intensities[index+1]
-
+                scan = laser_scan_blue
             elif cone_class == SensorFusion.CONE_CLASS_YELLOW:
-                laser_scan_yellow.ranges[index-1] = laser_scan.ranges[index-1]
-                laser_scan_yellow.intensities[index-1] = laser_scan.intensities[index-1]
+                scan = laser_scan_yellow
+            else:
+                continue
 
-                laser_scan_yellow.ranges[index] = laser_scan.ranges[index]
-                laser_scan_yellow.intensities[index] = laser_scan.intensities[index]
-
-                laser_scan_yellow.ranges[index+1] = laser_scan.ranges[index+1]
-                laser_scan_yellow.intensities[index+1] = laser_scan.intensities[index+1]
+            for shift in range(SensorFusion.INCLUDE_MIN, SensorFusion.INCLUDE_MAX + 1):
+                scan.ranges[index+shift] = laser_scan.ranges[index+shift]
+                scan.intensities[index+shift] = laser_scan.intensities[index+shift]
 
         self.publisher_laser_scan_blue.publish(laser_scan_blue)
         self.publisher_laser_scan_yellow.publish(laser_scan_yellow)
