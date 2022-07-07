@@ -12,12 +12,15 @@ from sensor_msgs.msg import LaserScan, CameraInfo
 from std_msgs.msg import Float64MultiArray
 import numpy as np
 from copy import deepcopy
+from math import degrees
 
 
 class SensorFusion(Node):
     CONE_CLASS_BLUE = 0
     CONE_CLASS_ORANGE = 1
     CONE_CLASS_YELLOW = 2
+    ACCURACY_THRESHOLD = 0.4
+    WIDTH_THRESHOLD = 0.04
 
     def __init__(self):
         super().__init__("sensor_fusion")  # init node with name
@@ -26,11 +29,15 @@ class SensorFusion(Node):
         self.width = 640
         self.height = 480
 
+        self.angle_degrees_start = 31.1
+        self.angle_degrees_stop = -31.1
+
         self.publisher_queue_size = 2
         
         self.cosinus_theta = None
         self.init_cosinus_theta(0.01745329251994, 360) # thats 1 degree in radiant
         self.pixel_x_nparr = None
+        self.laser_scan = None
 
         self.publisher_laser_scan_yellow = self.create_publisher(
             LaserScan, "laser_scan_yellow_cones", self.publisher_queue_size)
@@ -98,69 +105,67 @@ class SensorFusion(Node):
     def subscribe_laser_scan(self, laser_scan: LaserScan):
         self.laser_scan = laser_scan
 
-    def subscribe_bounding_boxes(self, bounding_boxes_message: Float64MultiArray):
+    def subscribe_bounding_boxes(self, bounding_boxes: Float64MultiArray):
         """"
-        bounding_box: [center_x, center_y, width, height, class, accuracy, ...] Array is flattened
+        bounding_box: [center_x, center_y, width, height, accuracy, class, ...] Array is flattened
         """
         if type(self.laser_scan) != LaserScan:
             return
 
-        bounding_boxes = self.unflatten_bounding_boxes(bounding_boxes_message)
         laser_scan = deepcopy(self.laser_scan)
         laser_scan_blue = deepcopy(laser_scan)
         laser_scan_yellow = deepcopy(laser_scan)
-        pixel_x_nparr = self.get_pixel_x(laser_scan)
 
         # clear laser scans
         for i in range(len(laser_scan.ranges)):
             laser_scan_blue.ranges[i] = np.inf
             laser_scan_yellow.ranges[i] = np.inf
+            laser_scan_blue.intensities[i] = 0
+            laser_scan_yellow.intensities[i] = 0
 
-        # filter laser scan matching a bounding box and sort to corresponding laser_scan
-        for i in range(len(pixel_x_nparr)):
-            pixel_x = pixel_x_nparr[i]
+        for i in range(len(bounding_boxes.data) // 6):
+            center_x, cy, width, h, accuracy, cone_class = bounding_boxes.data[i*6:i*6 + 6]
 
-            if pixel_x == np.inf:
+            if accuracy < SensorFusion.ACCURACY_THRESHOLD:
                 continue
 
-            for x_center, ch, width, h, cone_class, a in bounding_boxes:
-                shift = width // 2
+            if width < SensorFusion.WIDTH_THRESHOLD:
+                continue
 
-                if x_center - shift < pixel_x / self.width < x_center + shift:
-                    if cone_class == SensorFusion.CONE_CLASS_BLUE:
-                        laser_scan_blue.ranges[i] = laser_scan.ranges[i]
-                    elif cone_class == SensorFusion.CONE_CLASS_YELLOW:
-                        laser_scan_yellow.ranges[i] = laser_scan.ranges[i]
+            index = self.pixel_to_index(center_x)
 
-                    break
+            if cone_class == SensorFusion.CONE_CLASS_BLUE:
+                laser_scan_blue.ranges[index-1] = laser_scan.ranges[index-1]
+                laser_scan_blue.intensities[index-1] = laser_scan.intensities[index-1]
+
+                laser_scan_blue.ranges[index] = laser_scan.ranges[index]
+                laser_scan_blue.intensities[index] = laser_scan.intensities[index]
+                
+                laser_scan_blue.ranges[index+1] = laser_scan.ranges[index+1]
+                laser_scan_blue.intensities[index+1] = laser_scan.intensities[index+1]
+
+            elif cone_class == SensorFusion.CONE_CLASS_YELLOW:
+                laser_scan_yellow.ranges[index-1] = laser_scan.ranges[index-1]
+                laser_scan_yellow.intensities[index-1] = laser_scan.intensities[index-1]
+
+                laser_scan_yellow.ranges[index] = laser_scan.ranges[index]
+                laser_scan_yellow.intensities[index] = laser_scan.intensities[index]
+
+                laser_scan_yellow.ranges[index+1] = laser_scan.ranges[index+1]
+                laser_scan_yellow.intensities[index+1] = laser_scan.intensities[index+1]
 
         self.publisher_laser_scan_blue.publish(laser_scan_blue)
         self.publisher_laser_scan_yellow.publish(laser_scan_yellow)
 
-    def get_pixel_nparr(self, laser_scan: LaserScan) -> np.array:
-        """"
-        Convert polar coordinate to pixel coordinate
-        see: https://www.khanacademy.org/computing/computer-programming/programming-natural-simulations/programming-angular-movement/a/polar-coordinates
-        """
-        # cartesic coordinate has it origin at in the middle of the picture thats why we need to shift e. g. (0, 640) to (-320, 320)
-        shift = self.width // 2
-        max_x_shifted = shift
-        min_x_shifted = -max_x_shifted
+    def pixel_to_index(self, pixel: float) -> int:
+        return round(self.map_range_to(
+            0, 1,
+            31.1, -31.1,
+            pixel))
 
-        return np.array([
-            pixel_x + shift if max_x_shifted < pixel_x < min_x_shifted else np.inf
-            for pixel_x in laser_scan.ranges * self.cosinus_theta])
-
-    def unflatten_bounding_boxes(self, bounding_boxes: Float64MultiArray) -> np.array:
-        """"
-        Reshapes bounding_boxes to a 2 dimonsional array
-        """
-
-        number_bounding_box_attributes = 6 # center_x, center_y, width, height, class, accuracy
-        number_bounding_boxes = len(bounding_boxes.data)
-
-        return np.array(bounding_boxes.data).reshape(
-            number_bounding_boxes // number_bounding_box_attributes, number_bounding_box_attributes)
+    def map_range_to(self, input_start, input_end, output_start, output_end, value):
+        # https://stackoverflow.com/questions/5731863/mapping-a-numeric-range-onto-another
+        return output_start + ((output_end - output_start) / (input_end - input_start)) * (value - input_start)
 
 
 def main(args=None):
