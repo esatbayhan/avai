@@ -1,21 +1,16 @@
 from copy import deepcopy
-import re
-from turtle import width
+
+import numpy as np
 import rclpy
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
-from rclpy.timer import Timer
-from sensor_msgs.msg import LaserScan, CameraInfo
+from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64MultiArray
-import numpy as np
-from copy import deepcopy
-from math import degrees
 
 
-class SensorFusion(Node):
+class LidarFilter(Node):
     CONE_CLASS_BLUE = 0
     CONE_CLASS_ORANGE = 1
     CONE_CLASS_YELLOW = 2
@@ -36,9 +31,10 @@ class SensorFusion(Node):
         self.angle_degrees_stop = -31.1
 
         self.publisher_queue_size = 2
-        
+
         self.cosinus_theta = None
-        self.init_cosinus_theta(0.01745329251994, 360) # thats 1 degree in radiant
+        # thats 1 degree in radiant
+        self.init_cosinus_theta(0.01745329251994, 360)
         self.pixel_x_nparr = None
         self.laser_scan = None
 
@@ -62,7 +58,7 @@ class SensorFusion(Node):
             return False
 
         return type(self.create_subscription(LaserScan, topic_name, self.subscribe_laser_scan, self.subscriber_queue_size)) == Subscription
-    
+
     def init_subscriber_bounding_boxes(self, topic_name: str) -> bool:
         # ToDo(0) topic names have naming specifications
         # watch here https://design.ros2.org/articles/topic_and_service_names.html
@@ -81,7 +77,8 @@ class SensorFusion(Node):
 
         half_pi = np.pi / 2
 
-        self.cosinus_theta = np.cos([half_pi - angle_increment for i in range(number_points)])
+        self.cosinus_theta = np.cos(
+            [half_pi - angle_increment for i in range(number_points)])
 
     def initializer(self, param: Parameter, valid_types: tuple, init_function) -> bool:
         if param.type_ not in valid_types:
@@ -129,24 +126,25 @@ class SensorFusion(Node):
         for i in range(len(bounding_boxes.data) // 6):
             center_x, cy, width, h, accuracy, cone_class = bounding_boxes.data[i*6:i*6 + 6]
 
-            if accuracy < SensorFusion.ACCURACY_THRESHOLD:
+            if accuracy < LidarFilter.ACCURACY_THRESHOLD:
                 continue
 
-            if width < SensorFusion.WIDTH_THRESHOLD:
+            if width < LidarFilter.WIDTH_THRESHOLD:
                 continue
 
             index = self.pixel_to_index(center_x)
 
-            if cone_class == SensorFusion.CONE_CLASS_BLUE:
+            if cone_class == LidarFilter.CONE_CLASS_BLUE:
                 scan = laser_scan_blue
-            elif cone_class == SensorFusion.CONE_CLASS_YELLOW:
+            elif cone_class == LidarFilter.CONE_CLASS_YELLOW:
                 scan = laser_scan_yellow
             else:
                 continue
 
-            for shift in range(SensorFusion.INCLUDE_MIN, SensorFusion.INCLUDE_MAX + 1):
+            for shift in range(LidarFilter.INCLUDE_MIN, LidarFilter.INCLUDE_MAX + 1):
                 scan.ranges[index+shift] = laser_scan.ranges[index+shift]
-                scan.intensities[index+shift] = laser_scan.intensities[index+shift]
+                scan.intensities[index +
+                                 shift] = laser_scan.intensities[index+shift]
 
         self.publisher_laser_scan_blue.publish(laser_scan_blue)
         self.publisher_laser_scan_yellow.publish(laser_scan_yellow)
@@ -166,11 +164,11 @@ def main(args=None):
 
     rclpy.init(args=args)
 
-    sensor_fusion = SensorFusion()
+    lidar_filter = LidarFilter()
     # spin node so callback function is called
-    rclpy.spin(sensor_fusion)
+    rclpy.spin(lidar_filter)
 
-    sensor_fusion.destroy_node()
+    lidar_filter.destroy_node()
     rclpy.shutdown()
 
 

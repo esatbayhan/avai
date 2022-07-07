@@ -1,10 +1,10 @@
 from setuptools import setup
 
-package_name = 'sensor_fusion'
+package_name = 'lidar_filter'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.0.1',
     packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -13,14 +13,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='gitpod',
-    maintainer_email='esatbf@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    maintainer='Esat Sefa Bayhan',
+    maintainer_email='esat.bayhan@rub.de',
+    description='Filter LaserScan from lidar to match bounding boxes of cones',
+    license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "sensor_fusion = sensor_fusion.sensor_fusion:main"
+            "filter = lidar_filter.lidar_filter:main"
         ],
     },
 )
