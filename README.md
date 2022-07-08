@@ -9,6 +9,8 @@
 - campkg
 - perception
 
+## Dependencies
+- `rosdep install --from-paths src --ignore-src -r -y`
 
 # Get started with the simulation:
 - make sure you clone the entire repo in the following file structure: HOME/turtlebot3_ws/src
