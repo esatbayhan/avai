@@ -1,31 +1,35 @@
 # Autonomous Vehicles and Artificial Intelligence
 
-## Tips
-### Clone
+## Start Working
+- Follow the emanual of TurtleBot3 to install all tools (use foxy)
+  - [emanual.robotis.com](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/#pc-setup)
 - Clone the project with submodules as colcon_ws in your home folder
-- `git clone --recurse-submodules -j8 https://github.com/esatbayhan/avai ~/colcon_ws`
+  - `git clone --recurse-submodules -j8 https://github.com/esatbayhan/avai ~/colcon_ws`
+- Install all dependencies required by packages
+  - `rosdep install --from-paths src --ignore-src -r -y`
 
-## Packaged
-- campkg
-- perception
+## Stack
+### Currently
+TurtleBot3
+1. Start Camera `ros2 run campkg camera`
+2. Start Camera Processing `ros2 run campkg processing`
 
-## Dependencies
-- `rosdep install --from-paths src --ignore-src -r -y`
+Computer
 
-# Get started with the simulation:
-- make sure you clone the entire repo in the following file structure: HOME/turtlebot3_ws/src
-- download zip: https://drive.google.com/file/d/1Uj5RQQPWN1KfQzIC3PBE3yP42D1mGnsx/view?usp=sharing
-- inside "HOME/turtlebot3_ws/src/avai/src" unpack the zip (containing other repos + custom simulation files)
-- delete all files in HOME/turtlebot3_ws/ other than the "src" folder
-- run the following commands in HOME/turtlebot3_ws/
+3. Start Cone Detection `ros2 run perception detector`
+4. Start LiDAR Filter `ros2 run lidar_filter filter`
 
-```bash
-colcon build
-export TURTLEBOT3_MODEL=waffle_pi
-. install/setup.bash
-ros2 launch turtlebot3_gazebo track_1.launch.py
-ros2 launch perception detector_display_launch.py
-ros2 run turtlebot3_teleop teleop_keyboard
-```
+### Future
+Computer
 
-if everything works you can do the same as in this video: https://drive.google.com/file/d/1YtI3s_NveSBI50pj2B6MthdQEDRCGTfG/view?usp=sharing
+5. Calculate and publish Waypoints based on LaserScan published by lidar_filter.filter
+6. Subscribe Waypoints and move TurtleBot3 to specified Waypoint
+
+## Simulation
+1. Start Simulation `ros2 launch turtlebot3_gazebo track_1.launch.py`
+2. Start Simulated Camera `ros2 run campkg simcam`
+
+## Demonstration
+### Simulation with Detection & LiDAR Filtering
+https://user-images.githubusercontent.com/69524126/178010672-4d66b507-c91b-4a6a-b23f-e7b26b3d5333.mp4
+
