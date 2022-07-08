@@ -7,25 +7,38 @@
   <maintainer email="esat.bayhan@rub.de">Esat Sefa Bayhan</maintainer>
   <license>MIT</license>
 
-  <depend>rclpy</depend>
-  <depend>sensor_msgs</depend>
-  <depend>cv_bridge</depend>
-  <depend>python3-opencv</depend>
-  <depend>python-pytorch-pip</depend>
-  <depend>python3-pandas</depend>
-  <depend>python3-tqdm</depend>
-  <depend>python3-seaborn</depend>
-  <depend>python3-matplotlib</depend>
-  <depend>python3-numpy</depend>
-  <depend>python3-pil</depend>
-  <depend>python3-requests</depend>
-  <depend>python3-scipy</depend>
-  <depend>python-tabulate-pip</depend>
+  <!--Package Requirements-->
+    <depend>rclpy</depend>
+    <depend>sensor_msgs</depend>
+    <depend>std_msgs</depend>
+    <depend>cv_bridge</depend>
+    <depend>python-tabulate-pip</depend>
 
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
+  <!--YOLOv5 Requirements based on https://github.com/ultralytics/yolov5/blob/master/requirements.txt-->
+    <!--Base-->
+    <depend>python3-matplotlib</depend>
+    <depend>python3-numpy</depend>
+    <depend>python3-opencv</depend>
+    <depend>python3-pil</depend>
+    <depend>python3-yaml</depend>
+    <depend>python3-requests</depend>
+    <depend>python3-scipy</depend>
+    <depend>python-pytorch-pip</depend>
+    <depend>python3-tqdm</depend>
+    <depend>python3-protobuf</depend>
+    <!--Logging-->
+    <depend>python-tensorboard-pip</depend>
+    <!--Plotting-->
+    <depend>python3-pandas</depend>
+    <depend>python3-seaborn</depend>
+    <!--Extras-->
+    <depend>ipython3</depend>
+    <depend>python3-psutil</depend>
+
+    <test_depend>ament_copyright</test_depend>
+    <test_depend>ament_flake8</test_depend>
+    <test_depend>ament_pep257</test_depend>
+    <test_depend>python3-pytest</test_depend>
 
   <export>
     <build_type>ament_python</build_type>
