@@ -93,6 +93,15 @@ class Camera(Node):
 
         ret, frame = self.video_capture.read()
 
+        # maybe this needs to be used for sensofusion to work
+        # if ret:
+        #     compressed_image = self.cv_bridge.cv2_to_compressed_imgmsg(frame, self.image_format)
+        #     compressed_image.header.stamp = self.get_clock().now().to_msg()
+        #     self.publisher.publish(compressed_image)
+        #     self.get_logger().debug('Publishing video frame')
+        # else:
+        #     self.get_logger().warning("Couldn't publish video frame")
+
         if ret:
             self.publisher.publish(
                 self.cv_bridge.cv2_to_compressed_imgmsg(frame, self.image_format))

@@ -1,5 +1,8 @@
 from datetime import datetime
 from os.path import expanduser
+from time import time
+
+import joblib
 
 import rclpy
 import torch
@@ -11,7 +14,7 @@ from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from sensor_msgs.msg import CompressedImage
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Header
 
 
 class Detection(Node):
@@ -121,6 +124,7 @@ class Detection(Node):
         return SetParametersResult(successful=successful)
 
     def subscribe(self, msg) -> None:
+        joblib.dump(msg, '/home/parallels/stored_joblib/img_msg.joblib')
         frame = self.cv_bridge.compressed_imgmsg_to_cv2(msg)
         frame = cvtColor(frame, COLOR_BGR2RGB)
 
@@ -138,9 +142,9 @@ class Detection(Node):
             imshow(self.cv_window_name, cv_frame)
             waitKey(self.cv_wait_ms)
 
-        self.publish(result.xywhn[0])
+        self.publish(result.xywhn[0], msg.header)
 
-    def publish(self, bounding_boxes: torch.Tensor) -> None:
+    def publish(self, bounding_boxes: torch.Tensor, time_stamp: Header) -> None:
         if type(self.publisher) != Publisher:
             return
 
@@ -149,6 +153,8 @@ class Detection(Node):
 
         message = Float64MultiArray()
         message.data = bounding_boxes.reshape(points*number_objects).tolist()
+        message.data.append(time_stamp.stamp.sec)
+        message.data.append(time_stamp.stamp.nanosec)
 
         self.publisher.publish(message)
 

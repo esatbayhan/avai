@@ -1,126 +1,128 @@
-## ignore this file
-
-
-# import joblib
-# from sensor_msgs.msg import LaserScan, CameraInfo
-# import numpy as np
-# # %matplotlib qt
-# # import cv2
-# import math
-# from matplotlib import pyplot as plt
-
-# # https://emanual.robotis.com/docs/en/platform/turtlebot3/appendix_raspi_cam/
-# # assuming a horizontal camera viewing angle of 62.2 degrees in model.sdf <horizontal_fov>1.085595</horizontal_fov> == 62,2 degrees
-# # the sensor ranges start straight to the front. to get all ranges to the left msg.ranges[:31] and to the right msg.ranges[-31:] 
-
-
-# msg = joblib.load('/home/parallels/stored_joblib/scan_msg.joblib')
-# cv_frame = joblib.load('/home/parallels/stored_joblib/cv_frame.joblib')
-# result_xywhn = joblib.load('/home/parallels/stored_joblib/result_xywhn.joblib')
-# # plt.imshow(cv_frame)
-# # plt.show()
-# # cv2.imshow('l' , np.array(cv_frame, dtype = np.uint8 ))
-# # cv2.waitKey()
-# # nr_bb = result_xywhn.shape[0]
-
-# np_xywhn = np.array(result_xywhn)
-
-# sensor_ranges_lr = np.append(msg.ranges[-31:], msg.ranges[:31])
-
-# angel_increment = msg.angle_increment
-# laser_pixel_intervall = 640 / (1.085595 / angel_increment)
-
-# x1 = np_xywhn[:, 0] * 640
-# x2 = (np_xywhn[:, 0] + np_xywhn[:, 2]) * 640
-# labels = np_xywhn[:, 5]
-# ranges = []
-# angles = []
-# points_x = []
-# points_y = []
-
-# for i in range(len(np_xywhn)):
-#   laser_index_1 = int(x1[i]/laser_pixel_intervall)
-#   laser_index_2 = int(x2[i]/laser_pixel_intervall) + 1
-#   range = np.min(sensor_ranges_lr[laser_index_1:laser_index_2])
-#   ranges.append(range)
-#   # angle = (laser_index_1 * angel_increment) -1.5708
-#   if laser_index_1 < 31: 
-#     angle = 7.85398 - ((laser_index_1 + 329) * angel_increment)
-#   else:
-#     angle = 1.5708 - ((laser_index_1 -31) * angel_increment)
-#   points_x.append(range*(math.cos((angle))))
-#   points_y.append(range*(math.sin((angle))))
-
-
-# # plt.xlim(0, 5)
-# # plt.ylim(0, 5)
-# # plt.grid()
-# # # plt.plot(points_x, points_y)
-# # plt.plot([1], [3], 'ro')
-# # plt.show()
-
-# plt.rcParams["figure.figsize"] = [7.00, 3.50]
-# plt.rcParams["figure.autolayout"] = True
-# x = points_x
-# y = points_y
-# plt.xlim(-5, 5)
-# plt.ylim(-5, 5)
-# plt.grid()
-# plt.plot(x, y, marker="o", markersize=20, markeredgecolor="red", markerfacecolor="green")
-# plt.show()
-
-
-############################################################################################### 
-# in the scan msg: set the values to inf that dont correspond to a cone
+# dev imports
 import joblib
+from matplotlib import pyplot as plt
+import os
+import matplotlib
+%matplotlib qt
+
+
+# required imports
 import numpy as np
-
-msg = joblib.load('/home/parallels/stored_joblib/scan_msg.joblib')
-# result_xywhn = joblib.load('/home/parallels/stored_joblib/result_xywhn.joblib')
-result_xywhn = joblib.load('/home/parallels/stored_joblib/bba.joblib')
-
-result_xywhn  = np.array(result_xywhn.data).reshape(len(result_xywhn.data)//6, 6)
-# write a node, that takes the scan msg and the result_xywhn and replaces the inf values with the min value of the sensor ranges
+import math
+import pandas as pd
+from transforms3d import euler
 
 
+# extracted functions
+def filter_for_time(msg, scan_msgs, odom_msgs):
+  image_time_sec, image_time_nanosec = msg.data[-2], msg.data[-1]
+  image_time = image_time_sec + image_time_nanosec / 1e9
 
-sensor_ranges_lr = np.append(msg.ranges[-31:], msg.ranges[:31])
+  # match scan msg to image_time
+  time_delta_scan = []
+  for m in scan_msgs:
+    scan_time = m.header.stamp.sec + m.header.stamp.nanosec / 1e9
+    time_delta_scan.append(np.abs(image_time - scan_time))
+  scan_msg = scan_msgs[np.where(np.array(time_delta_scan) == np.min(time_delta_scan))[0][0]]
 
-angel_increment = msg.angle_increment
-laser_pixel_intervall = 640 / (1.085595 / angel_increment)
+  # match scan msg to image_time
+  time_delte_odom = []
+  for m in odom_msgs:
+    odom_time = m.header.stamp.sec + m.header.stamp.nanosec / 1e9
+    time_delte_odom.append(np.abs(image_time - odom_time))
+  odom_msg = odom_msgs[np.where(np.array(time_delte_odom) == np.min(time_delte_odom))[0][0]]
 
-x1 = result_xywhn[:, 0] * 640
-x2 = (result_xywhn[:, 0] + result_xywhn[:, 2]) * 640
-cone_range_index = []
+  # TODO emty the arrays according to the time delta
 
-for i in range(len(result_xywhn)):
-  laser_index_1 = int(x1[i]/laser_pixel_intervall) - 5
-  laser_index_2 = int(x2[i]/laser_pixel_intervall) + 2
-  start_index = np.where(sensor_ranges_lr[laser_index_1:laser_index_2] != np.inf)
-  cone_index = start_index[0] + laser_index_1
-  for index in cone_index:
-    if index < 31: 
-      cone_range_index.append(index + 329)
-    else:
-      cone_range_index.append(index - 31)
+  # pop the time info from the bounding boxes and convert to numpy array
+  msg.data = msg.data[:-2]
+  bboxes  = np.array(msg.data).reshape(len(msg.data)//6, 6)
+  return scan_msg, odom_msg, bboxes
 
-l = [ind for ind in range(360) if ind not in cone_range_index]
-for b in l:
-  msg.ranges[b] = np.inf
-
-# publish msg
-
-
-# # %matplotlib qt
-# from matplotlib import pyplot as plt
+# class variables
+scan_msgs = None
+odom_msgs = None
+starting_pose = None
+starting_x = None
+starting_y = None
+cone_positions = None
+point_confidence_intervall = 0.25
+cone_positions = pd.DataFrame(columns=['x', 'y', 'label'])
 
 
-# plt.rcParams["figure.figsize"] = [7.00, 3.50]
-# plt.rcParams["figure.autolayout"] = True
-# x = points_x
-# y = points_y
-# plt.xlim(-5, 5)
-# plt.ylim(-5, 5)
-# plt.grid()
-# plt.plot(x, y, marker="o", markersize=20, markeredgecolor="red", markerfacecolor="green")
-# plt.show()
+##### iteration over msgs bundles to simulate arriaval of new data
+stored_data_path = '/home/parallels/stored_joblib/'
+list_of_data_files = os.listdir(stored_data_path)
+
+##### content of def subscribe_bounding_boxes
+for a, values in enumerate(list_of_data_files[:1]):
+  msgs = joblib.load(os.path.join(stored_data_path, 'msg_dump{}.joblib'.format(a)))
+
+  scan_msgs = msgs['scan_msgs']
+  odom_msgs = msgs['odom_msgs']
+  msg = msgs['bounding_boxes']
+
+  # 1. match the messages on a time basis
+  scan_msg, odom_msg, bboxes = filter_for_time(msg, scan_msgs, odom_msgs)
+
+  # 2. get orientation delta of the bot
+  # def get_pose(odom_msg):
+  pose_quaternion = [odom_msg.pose.pose.orientation.w, odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y, odom_msg.pose.pose.orientation.z]
+  current_pose = euler.quat2euler(pose_quaternion, axes='rxyz')
+  if starting_pose == None:
+    starting_pose = current_pose
+    starting_x = odom_msg.pose.pose.position.x
+    starting_y = odom_msg.pose.pose.position.y
+  pose_delta = current_pose[1] - starting_pose[1]
+  x_delta = - odom_msg.pose.pose.position.x - starting_x 
+  y_delta = - odom_msg.pose.pose.position.y - starting_y
+
+  # orientations
+
+  # 3. get relative positions of cones and turn them into absolut coordinates
+  # def get_cone_coordinats(bboxes, scan_msg):
+
+  relevant_sensor_ranges = np.append(scan_msg.ranges[-31:], scan_msg.ranges[:31])
+
+  angel_increment = scan_msg.angle_increment
+  laser_pixel_intervall = 640 / (1.085595 / angel_increment)
+
+  x1 = (bboxes[:, 0] - (bboxes[:, 2] / 2)) * 640
+  x2 = (bboxes[:, 0] + (bboxes[:, 2] / 2)) * 640
+
+  labels = bboxes[:, 5]
+
+  # get range and x y coordinates of the cones (bounding boxes, laser scan, orientation of the robot in the world) 
+  for b, value in enumerate(bboxes):
+    laser_index_1 = int(x1[b]/laser_pixel_intervall)
+    laser_index_2 = int(x2[b]/laser_pixel_intervall) + 1
+    range = np.min(relevant_sensor_ranges[laser_index_1:laser_index_2])
+    start_index = np.where(relevant_sensor_ranges == range)[0][0]
+    if range != np.inf:
+      if start_index <= 31:
+        angle = (7.85398 - ((start_index + 329) * angel_increment)) #+ pose_delta
+      else:
+        angle = (1.5708 - ((start_index -31) * angel_increment)) #+ pose_delta
+      x_coordinate =  range*(math.cos((angle))) + x_delta
+      y_coordinate = range*(math.sin((angle))) + y_delta
+      # check if cone is alreasy in the DataFrame
+      if len(cone_positions) > 0:
+        existing_cone = cone_positions.loc[
+          ((x_coordinate - point_confidence_intervall) < cone_positions['x']) & 
+          ((x_coordinate + point_confidence_intervall) > cone_positions['x']) &
+          ((y_coordinate - point_confidence_intervall) < cone_positions['y']) &
+          ((y_coordinate + point_confidence_intervall) > cone_positions['y']) 
+          ]
+        if len(existing_cone) == 0:
+          cone_positions.loc[len(cone_positions)] = [x_coordinate, y_coordinate, labels[b]]
+      else:
+        cone_positions.loc[len(cone_positions)] = [x_coordinate, y_coordinate, labels[b]]
+  
+
+plt.scatter(cone_positions.loc[cone_positions["label"] == 0]['x'], cone_positions.loc[cone_positions["label"] == 0]['y'], c='blue', s=200)
+plt.scatter(cone_positions.loc[cone_positions["label"] == 1]['x'], cone_positions.loc[cone_positions["label"] == 1]['y'], c='orange', s=200)
+plt.scatter(cone_positions.loc[cone_positions["label"] == 2]['x'], cone_positions.loc[cone_positions["label"] == 2]['y'], c='yellow', s=200)
+plt.grid()
+plt.xlim(-5, 5)
+plt.ylim(-5, 5)
+plt.show()

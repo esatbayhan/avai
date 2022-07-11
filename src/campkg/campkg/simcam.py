@@ -7,6 +7,7 @@ from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from sensor_msgs.msg import CompressedImage, Image
+import joblib
 
 
 class Simcam(Node):
@@ -84,6 +85,8 @@ class Simcam(Node):
     def publish(self, compressed_image: CompressedImage) -> None:
         if type(compressed_image) != CompressedImage:
             return
+
+        compressed_image.header.stamp = self.get_clock().now().to_msg()
 
         self.publisher.publish(compressed_image)
 
