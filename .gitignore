@@ -3,4 +3,3 @@ install/
 log/
 .vscode/settings.json
 __pycache__/
-src/sensor_fusion/sensor_fusion/__pycache__/__init__.cpython-38.pyc
