@@ -8,6 +8,7 @@ from rclpy.parameter import Parameter
 from rclpy.subscription import Subscription
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64MultiArray
+from rclpy.qos import qos_profile_sensor_data
 
 
 class LidarFilter(Node):
@@ -57,7 +58,7 @@ class LidarFilter(Node):
         if len(topic_name) == 0:
             return False
 
-        return type(self.create_subscription(LaserScan, topic_name, self.subscribe_laser_scan, self.subscriber_queue_size)) == Subscription
+        return type(self.create_subscription(LaserScan, topic_name, self.subscribe_laser_scan, qos_profile=qos_profile_sensor_data)) == Subscription
 
     def init_subscriber_bounding_boxes(self, topic_name: str) -> bool:
         # ToDo(0) topic names have naming specifications
@@ -69,7 +70,7 @@ class LidarFilter(Node):
         if len(topic_name) == 0:
             return False
 
-        return type(self.create_subscription(Float64MultiArray, topic_name, self.subscribe_bounding_boxes, self.subscriber_queue_size)) == Subscription
+        return type(self.create_subscription(Float64MultiArray, topic_name, self.subscribe_bounding_boxes, qos_profile=qos_profile_sensor_data)) == Subscription
 
     def init_cosinus_theta(self, angle_increment: float, number_points: int):
         if self.cosinus_theta:
@@ -103,6 +104,7 @@ class LidarFilter(Node):
         return SetParametersResult(successful=successful)
 
     def subscribe_laser_scan(self, laser_scan: LaserScan):
+        self.get_logger().info("Receiver laser_scan")
         self.laser_scan = laser_scan
 
     def subscribe_bounding_boxes(self, bounding_boxes: Float64MultiArray):
@@ -110,6 +112,7 @@ class LidarFilter(Node):
         bounding_box: [center_x, center_y, width, height, accuracy, class, ...] Array is flattened
         """
         if type(self.laser_scan) != LaserScan:
+            self.get_logger().info("self.laser_scan is not LaserScan")
             return
 
         laser_scan = deepcopy(self.laser_scan)
@@ -145,6 +148,14 @@ class LidarFilter(Node):
                 scan.ranges[index+shift] = laser_scan.ranges[index+shift]
                 scan.intensities[index +
                                  shift] = laser_scan.intensities[index+shift]
+
+        self.get_logger().info(f"{laser_scan_blue.ranges}")
+
+        # with open("~/blue", "a") as f:
+        #     f.write(f"{laser_scan_blue.ranges}")
+
+        # with open("~/yellow", "a") as f:
+        #     f.write(f"{laser_scan_yellow.ranges}")
 
         self.publisher_laser_scan_blue.publish(laser_scan_blue)
         self.publisher_laser_scan_yellow.publish(laser_scan_yellow)

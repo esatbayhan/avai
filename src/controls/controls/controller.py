@@ -11,6 +11,7 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Twist, Vector3
 from math import cos, radians, asin, sqrt
+from rclpy.qos import qos_profile_sensor_data
 
 
 class Controller(Node):
@@ -55,7 +56,7 @@ class Controller(Node):
         if len(topic_name) == 0:
             return False
 
-        return type(self.create_subscription(LaserScan, topic_name, self.subscribe_laser_scan, self.subscriber_queue_size)) == Subscription
+        return type(self.create_subscription(LaserScan, topic_name, self.subscribe_laser_scan, qos_profile=qos_profile_sensor_data)) == Subscription
 
     def init_subscriber_bounding_boxes(self, topic_name: str) -> bool:
         # ToDo(0) topic names have naming specifications
@@ -159,6 +160,10 @@ class Controller(Node):
         c = self.get_distance_between_cones(angle_distance_blue, angle_distance_yellow)
         s_c = self.get_median_triangle_c(angle_distance_yellow[1], angle_distance_blue[1], c)
         x_m = self.get_center_between_cones(angle_distance_blue, angle_distance_yellow)
+
+        if s_c == 0:
+            self.get_logger().info("s_c is 0")
+            return 0
 
         angle = asin(abs(x_m) / s_c)
 
