@@ -21,7 +21,7 @@ class LidarFilter(Node):
     INCLUDE_MAX = 1
 
     def __init__(self):
-        super().__init__("sensor_fusion")  # init node with name
+        super().__init__("lidar_filter")
         self.subscriber_queue_size = 2
 
         self.width = 640
