@@ -19,7 +19,7 @@ setup(
     maintainer='Esat Sefa Bayhan',
     maintainer_email='esat.bayhan@rub.de',
     description='Providing simple access to webcam',
-    license='ToDo',
+    license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
