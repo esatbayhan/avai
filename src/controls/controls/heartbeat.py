@@ -1,4 +1,3 @@
-from ctypes.wintypes import BOOL
 from time import time
 
 import rclpy
