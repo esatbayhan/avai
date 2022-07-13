@@ -1,17 +1,17 @@
 from copy import deepcopy
+from math import asin, cos, radians, sqrt
 
 import numpy as np
 import rclpy
+from geometry_msgs.msg import Twist, Vector3
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rclpy.subscription import Subscription
 from rclpy.publisher import Publisher
-from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Float64MultiArray
-from geometry_msgs.msg import Twist, Vector3
-from math import cos, radians, asin, sqrt
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.subscription import Subscription
+from sensor_msgs.msg import LaserScan
+from std_msgs.msg import Bool, Float64MultiArray
 
 
 class Controller(Node):
@@ -27,16 +27,8 @@ class Controller(Node):
     ANGLE_DEGREES_START = 31.1
     ANGLE_DEGREES_STOP = -31.1
 
-    # # Motion Control
-    # LINEAR_DRIVE_SPEED_START, LINEAR_DRIVE_SPEED_MAX = 0.2, 2.0
-    # LINEAR_DRIVE_BASE = 1.01
-    # ANGULAR_DRIVE_SPEED_MAX = 1.0
-    # LINEAR_ORIENTATION_SPEED = 0.2
-    # ANGULAR_ORIENTATION_SPEED_START, ANGULAR_ORIENTATION_SPEED_MAX = 0.1, 0.5
-    # ANGULAR_ORIENTATION_BASE = 1.1
-
     def __init__(self):
-        super().__init__("waypoint_filter")
+        super().__init__("controller")
         self.subscriber_queue_size = 2
         self.publisher_queue_size = 0
 
@@ -46,6 +38,8 @@ class Controller(Node):
         self.twist = Twist()
         self.orientate_counter = 0
         self.drive_counter = 0
+
+        self.create_timer(0.2, self.publish_heartbeat)
 
         # Drive
         self.drive_linear_speed_start, self.drive_linear_speed_max = 0.0, 0.0
@@ -58,6 +52,8 @@ class Controller(Node):
         self.orientation_angular_basis = 0.0
 
         self.add_on_set_parameters_callback(self.init_parameters)
+
+        self.declare_parameter("publisher_name_heartbeat", "heartbeat")
         self.declare_parameter("subscriber_laser_scan", "scan")
         self.declare_parameter("subscriber_bounding_boxes", "bounding_boxes")
         self.declare_parameter("publisher_controls", "cmd_vel")
@@ -74,6 +70,11 @@ class Controller(Node):
         self.declare_parameter("orientation_angular_speed_max", 0.5)
         self.declare_parameter("orientation_angular_speed_basis", 1.1)
 
+    def init_publisher_heartbeat(self, topic_name: str) -> bool:
+        self.publisher_heartbeat = self.create_publisher(Bool, topic_name, qos_profile=qos_profile_sensor_data)
+        self.create_timer(0.2, self.publish_heartbeat)
+
+        return True
 
     def init_subscriber_laser_scan(self, topic_name: str) -> bool:
         # ToDo(0) topic names have naming specifications
@@ -121,7 +122,10 @@ class Controller(Node):
 
         for param in params:
             # Publisher & Subscriber Parameters
-            if param.name == "subscriber_laser_scan":
+            if param.name == "publisher_name_heartbeat":
+                results.append(self.initializer(
+                    param, (Parameter.Type.STRING,), self.init_publisher_heartbeat))
+            elif param.name == "subscriber_laser_scan":
                 results.append(self.initializer(
                     param, (Parameter.Type.STRING,), self.init_subscriber_laser_scan))
             elif param.name == "subscriber_bounding_boxes":
@@ -164,6 +168,9 @@ class Controller(Node):
 
         successful = len(results) > 0 and all(results)
         return SetParametersResult(successful=successful)
+
+    def publish_heartbeat(self) -> None:
+        self.publisher_heartbeat.publish(Bool())
 
     def subscribe_laser_scan(self, laser_scan: LaserScan):
         self.laser_scan = laser_scan
@@ -306,13 +313,19 @@ class Controller(Node):
         # https://stackoverflow.com/questions/5731863/mapping-a-numeric-range-onto-another
         return output_start + ((output_end - output_start) / (input_end - input_start)) * (value - input_start)
 
+    def destroy_node(self) -> bool:
+        for subscription in self.subscriptions:
+            subscription.destroy()
+
+        self.publisher_controls.publish(Twist())
+
+        return super().destroy_node()
+
 
 def main(args=None):
-
     rclpy.init(args=args)
 
     controller = Controller()
-    # spin node so callback function is called
     rclpy.spin(controller)
 
     controller.destroy_node()
