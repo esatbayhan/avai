@@ -15,23 +15,25 @@ from rclpy.qos import qos_profile_sensor_data
 
 
 class Controller(Node):
+    # Cone Detection
     CONE_CLASS_BLUE = 0
     CONE_CLASS_ORANGE = 1
     CONE_CLASS_YELLOW = 2
     ACCURACY_THRESHOLD = 0.4
     WIDTH_THRESHOLD = 0.04
+    WIDTH_MIN, WIDTH_MAX = 0, 1
 
-    INCLUDE_MIN = -1
-    INCLUDE_MAX = 1
-
-    WIDTH = 1
-    HEIGHT = 1
-
+    # Laser Scan
     ANGLE_DEGREES_START = 31.1
     ANGLE_DEGREES_STOP = -31.1
 
-    LINEAR_SPEED = 0.1
-    ANGULAR_SPEED = 1.0
+    # Motion Control
+    LINEAR_DRIVE_SPEED_START, LINEAR_DRIVE_SPEED_MAX = 0.2, 2.0
+    LINEAR_DRIVE_BASE = 1.01
+    ANGULAR_DRIVE_SPEED_MAX = 1.0
+    LINEAR_ORIENTATION_SPEED = 0.2
+    ANGULAR_ORIENTATION_SPEED_START, ANGULAR_ORIENTATION_SPEED_MAX = 0.1, 0.5
+    ANGULAR_ORIENTATION_BASE = 1.1
 
     def __init__(self):
         super().__init__("waypoint_filter")
@@ -40,6 +42,10 @@ class Controller(Node):
 
         self.laser_scan = None
         self.publisher_controls = None
+
+        self.twist = Twist()
+        self.orientate_counter = 0
+        self.drive_counter = 0
 
         self.add_on_set_parameters_callback(self.init_parameters)
         self.declare_parameter("subscriber_laser_scan", "scan")
@@ -124,37 +130,39 @@ class Controller(Node):
 
         if angle_distance_blue == None:
             self.get_logger().info("angle_distance_blue is None")
-            self.orientate(0.01)
+            self.orientate(True)
             return
 
         if angle_distance_yellow == None:
             self.get_logger().info("angle_distance_yellow is None")
-            self.orientate(-0.01)
+            self.orientate(False)
             return
 
         self.drive(angle_distance_blue, angle_distance_yellow)
 
-    def orientate(self, angular_z: float):
-        twist = Twist()
-        twist.angular.z = angular_z
-        
-        self.publisher_controls.publish(twist)
+    def orientate(self, left: bool) -> None:
+        if not left:
+            left = -1
+
+        self.twist.angular.z = left * min(Controller.ANGULAR_ORIENTATION_SPEED_START * Controller.ANGULAR_ORIENTATION_BASE**self.orientate_counter, Controller.ANGULAR_ORIENTATION_SPEED_MAX)
+        self.twist.linear.x = Controller.LINEAR_ORIENTATION_SPEED
+
+        self.drive_counter = 0
+        self.orientate_counter += 1 
+
+        self.publisher_controls.publish(self.twist)
 
     def drive(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
         angle = self.get_angle(angle_distance_blue, angle_distance_yellow)
         self.get_logger().info(f"angle is {angle}")
 
-        twist = Twist()
-        twist.linear.x = Controller.LINEAR_SPEED
-        twist.angular.z = angle * (1 if (angle > 0) else -1) * 0.1
+        self.twist.linear.x = min(Controller.LINEAR_DRIVE_SPEED_START * Controller.LINEAR_DRIVE_BASE**self.drive_counter, Controller.LINEAR_DRIVE_SPEED_MAX)
+        self.twist.angular.z = angle * (1 if (angle > 0) else -1) * 0.1
 
-        self.publisher_controls.publish(twist)
-        # self.get_logger().info("sleeping")
-        # self.create_rate(1).sleep()
-        # self.get_logger().info("sleep finished")
+        self.orientate_counter = 0
+        self.drive_counter += 1
 
-        # twist.angular.z = 0
-        # self.publisher_controls.publish(twist)
+        self.publisher_controls.publish(self.twist)
 
     def get_angle(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
         c = self.get_distance_between_cones(angle_distance_blue, angle_distance_yellow)
@@ -237,7 +245,7 @@ class Controller(Node):
 
     def pixel_to_index(self, pixel: float) -> int:
         return round(self.map_range_to(
-            0, Controller.WIDTH,
+            Controller.WIDTH_MIN, Controller.WIDTH_MAX,
             Controller.ANGLE_DEGREES_START, Controller.ANGLE_DEGREES_STOP,
             pixel))
 
