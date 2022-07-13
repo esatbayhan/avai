@@ -232,7 +232,7 @@ class Controller(Node):
 
         if s_c == 0:
             self.get_logger().info("s_c is 0")
-            return 0
+            return 0.0
 
         angle = asin(abs(x_m) / s_c)
 
