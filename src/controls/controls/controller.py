@@ -214,10 +214,11 @@ class Controller(Node):
 
     def drive(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
         angle = self.get_angle(angle_distance_blue, angle_distance_yellow)
-        self.get_logger().info(f"angle is {angle}")
 
         self.twist.linear.x = min(self.drive_linear_speed_start * self.drive_linear_speed_basis**self.drive_counter, self.drive_linear_speed_max)
-        self.twist.angular.z = min(angle * (1 if (angle > 0) else -1) * 0.1, self.drive_angular_speed_max)
+        self.twist.angular.z = min(abs(angle), self.drive_angular_speed_max) * (1 if angle > 0 else -1)
+
+        self.get_logger().info(f"Set angular speed to {self.twist.angular.z}")
 
         self.orientate_counter = 0
         self.drive_counter += 1
