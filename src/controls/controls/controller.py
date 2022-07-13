@@ -27,6 +27,8 @@ class Controller(Node):
     ANGLE_DEGREES_START = 31.1
     ANGLE_DEGREES_STOP = -31.1
 
+    ORIENTATE_DRIVE_THRESHOLD = 4.0
+
     def __init__(self):
         super().__init__("controller")
         self.subscriber_queue_size = 2
@@ -203,9 +205,12 @@ class Controller(Node):
     def orientate(self, left: bool) -> None:
         if not left:
             left = -1
-
+        
         self.twist.angular.z = left * min(self.orientation_angular_speed_start * self.orientation_angular_speed_basis**self.orientate_counter, self.orientation_angular_speed_max)
         self.twist.linear.x = self.orientation_linear_speed
+
+        if self.orientate_counter > Controller.ORIENTATE_DRIVE_THRESHOLD:
+            self.twist.linear.z = 0.0
 
         self.drive_counter = 0
         self.orientate_counter += 1 
@@ -291,7 +296,7 @@ class Controller(Node):
                 continue
 
             angle_distance.append((index, laser_scan.ranges[index]))
-            
+
         angle_distance_blue = min(angle_distance_blue, key=lambda angle_distance: angle_distance[1], default=None)
         angle_distance_yellow = min(angle_distance_yellow, key=lambda angle_distance: angle_distance[1], default=None)
 
