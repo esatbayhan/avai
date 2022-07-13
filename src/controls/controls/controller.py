@@ -1,5 +1,5 @@
 from copy import deepcopy
-from math import asin, cos, radians, sqrt
+from math import asin, cos, radians, sqrt, sin
 
 import numpy as np
 import rclpy
@@ -216,7 +216,7 @@ class Controller(Node):
         angle = self.get_angle(angle_distance_blue, angle_distance_yellow)
 
         self.twist.linear.x = min(self.drive_linear_speed_start * self.drive_linear_speed_basis**self.drive_counter, self.drive_linear_speed_max)
-        self.twist.angular.z = min(abs(angle), self.drive_angular_speed_max) * (1 if angle > 0 else -1)
+        self.twist.angular.z = min(abs(angle) * 0.1, self.drive_angular_speed_max) * (1 if angle > 0 else -1)
 
         self.get_logger().info(f"Set angular speed to {self.twist.angular.z}")
 
@@ -229,6 +229,10 @@ class Controller(Node):
         c = self.get_distance_between_cones(angle_distance_blue, angle_distance_yellow)
         s_c = self.get_median_triangle_c(angle_distance_yellow[1], angle_distance_blue[1], c)
         x_m = self.get_center_between_cones(angle_distance_blue, angle_distance_yellow)
+
+        if c == 0:
+            self.get_logger().warn(f"c is 0, angle_distance_blue is {angle_distance_blue}, angle_distance_yellow is: {angle_distance_yellow}")
+            return 0.0
 
         if s_c == 0:
             self.get_logger().info("s_c is 0")
@@ -247,6 +251,12 @@ class Controller(Node):
     def get_distance_between_cones(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
         alpha, a = angle_distance_yellow
         beta, b = angle_distance_blue
+
+        alpha = abs(alpha)
+        beta = abs(beta)
+
+        if a == b == 0:
+            self.get_logger().warn("Inside get_distance_between_cones, a = b = 0")
         
         return sqrt(a*a + b*b - 2*a*b*cos(radians(alpha + beta)))
 
@@ -270,7 +280,7 @@ class Controller(Node):
 
             index = self.pixel_to_index(center_x)
 
-            if laser_scan.ranges[index] == np.inf:
+            if laser_scan.ranges[index] == 0.0:
                 continue
 
             if cone_class == Controller.CONE_CLASS_BLUE:
@@ -291,8 +301,8 @@ class Controller(Node):
         angle_blue, distance_blue = cone_blue
         angle_yellow, distance_yellow = cone_yellow
 
-        adjacent_blue = self.get_adjacent(distance_blue, radians(90 - abs(angle_blue)))
-        adjacent_yellow = self.get_adjacent(distance_yellow, radians(90 - abs(angle_yellow)))
+        adjacent_blue = self.get_opposite(distance_blue, radians(abs(angle_blue)))
+        adjacent_yellow = self.get_opposite(distance_yellow, radians(abs(angle_yellow)))
 
         if angle_blue < 0:
             adjacent_blue = -adjacent_blue
@@ -301,8 +311,8 @@ class Controller(Node):
 
         return (adjacent_blue + adjacent_yellow) / 2
 
-    def get_adjacent(self, hypotenuse: float, alpha: float) -> float:
-        return cos(alpha) * hypotenuse
+    def get_opposite(self, hypotenuse: float, alpha: float) -> float:
+        return sin(alpha) * hypotenuse
 
     def pixel_to_index(self, pixel: float) -> int:
         return round(self.map_range_to(
