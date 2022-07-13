@@ -27,13 +27,13 @@ class Controller(Node):
     ANGLE_DEGREES_START = 31.1
     ANGLE_DEGREES_STOP = -31.1
 
-    # Motion Control
-    LINEAR_DRIVE_SPEED_START, LINEAR_DRIVE_SPEED_MAX = 0.2, 2.0
-    LINEAR_DRIVE_BASE = 1.01
-    ANGULAR_DRIVE_SPEED_MAX = 1.0
-    LINEAR_ORIENTATION_SPEED = 0.2
-    ANGULAR_ORIENTATION_SPEED_START, ANGULAR_ORIENTATION_SPEED_MAX = 0.1, 0.5
-    ANGULAR_ORIENTATION_BASE = 1.1
+    # # Motion Control
+    # LINEAR_DRIVE_SPEED_START, LINEAR_DRIVE_SPEED_MAX = 0.2, 2.0
+    # LINEAR_DRIVE_BASE = 1.01
+    # ANGULAR_DRIVE_SPEED_MAX = 1.0
+    # LINEAR_ORIENTATION_SPEED = 0.2
+    # ANGULAR_ORIENTATION_SPEED_START, ANGULAR_ORIENTATION_SPEED_MAX = 0.1, 0.5
+    # ANGULAR_ORIENTATION_BASE = 1.1
 
     def __init__(self):
         super().__init__("waypoint_filter")
@@ -47,10 +47,33 @@ class Controller(Node):
         self.orientate_counter = 0
         self.drive_counter = 0
 
+        # Drive
+        self.drive_linear_speed_start, self.drive_linear_speed_max = 0.0, 0.0
+        self.drive_linear_speed_basis = 0.0
+        self.drive_angular_speed_max = 0.0
+
+        # Orientation
+        self.orientation_linear_speed = 0.0
+        self.orientation_angular_speed_start, self.orientation_angular_speed_max = 0.0, 0.0
+        self.orientation_angular_basis = 0.0
+
         self.add_on_set_parameters_callback(self.init_parameters)
         self.declare_parameter("subscriber_laser_scan", "scan")
         self.declare_parameter("subscriber_bounding_boxes", "bounding_boxes")
         self.declare_parameter("publisher_controls", "cmd_vel")
+
+        # Drive
+        self.declare_parameter("drive_linear_speed_start", 0.2)
+        self.declare_parameter("drive_linear_speed_max", 2.0)
+        self.declare_parameter("drive_linear_speed_basis", 1.05)
+        self.declare_parameter("drive_angular_speed_max", 1.0)
+
+        # Orientation
+        self.declare_parameter("orientation_linear_speed", 0.2)
+        self.declare_parameter("orientation_angular_speed_start", 0.1)
+        self.declare_parameter("orientation_angular_speed_max", 0.5)
+        self.declare_parameter("orientation_angular_speed_basis", 1.1)
+
 
     def init_subscriber_laser_scan(self, topic_name: str) -> bool:
         # ToDo(0) topic names have naming specifications
@@ -97,6 +120,7 @@ class Controller(Node):
         results = []
 
         for param in params:
+            # Publisher & Subscriber Parameters
             if param.name == "subscriber_laser_scan":
                 results.append(self.initializer(
                     param, (Parameter.Type.STRING,), self.init_subscriber_laser_scan))
@@ -106,7 +130,36 @@ class Controller(Node):
             elif param.name == "publisher_controls":
                 results.append(self.initializer(
                     param, (Parameter.Type.STRING,), self.init_publisher_controls))
+
+            # Drive Parameters
+            elif param.name == "drive_linear_speed_start" and param.type_ == Parameter.Type.DOUBLE:
+                self.drive_linear_speed_start = param.value
+                results.append(True)
+            elif param.name == "drive_linear_speed_max" and param.type_ == Parameter.Type.DOUBLE:
+                self.drive_linear_speed_max = param.value
+                results.append(True)
+            elif param.name == "drive_linear_speed_basis" and param.type_ == Parameter.Type.DOUBLE:
+                self.drive_linear_speed_basis = param.value
+                results.append(True)
+            elif param.name == "drive_angular_speed_max" and param.type_ == Parameter.Type.DOUBLE:
+                self.drive_angular_speed_max = param.value
+                results.append(True)
+
+            # Orientation Parameters
+            elif param.name == "orientation_linear_speed" and param.type_ == Parameter.Type.DOUBLE:
+                self.orientation_linear_speed = param.value
+                results.append(True)
+            elif param.name == "orientation_angular_speed_start" and param.type_ == Parameter.Type.DOUBLE:
+                self.orientation_angular_speed_start = param.value
+                results.append(True)
+            elif param.name == "orientation_angular_speed_max" and param.type_ == Parameter.Type.DOUBLE:
+                self.orientation_angular_speed_max = param.value
+                results.append(True)
+            elif param.name == "orientation_angular_speed_basis" and param.type_ == Parameter.Type.DOUBLE:
+                self.orientation_angular_speed_basis = param.value
+                results.append(True)
             else:
+                self.get_logger().warn(f"Could not identify parameter {param}")
                 results.append(False)
 
         successful = len(results) > 0 and all(results)
@@ -144,8 +197,8 @@ class Controller(Node):
         if not left:
             left = -1
 
-        self.twist.angular.z = left * min(Controller.ANGULAR_ORIENTATION_SPEED_START * Controller.ANGULAR_ORIENTATION_BASE**self.orientate_counter, Controller.ANGULAR_ORIENTATION_SPEED_MAX)
-        self.twist.linear.x = Controller.LINEAR_ORIENTATION_SPEED
+        self.twist.angular.z = left * min(self.orientation_angular_speed_start * self.orientation_angular_speed_basis**self.orientate_counter, self.orientation_angular_speed_max)
+        self.twist.linear.x = self.orientation_linear_speed
 
         self.drive_counter = 0
         self.orientate_counter += 1 
@@ -156,8 +209,8 @@ class Controller(Node):
         angle = self.get_angle(angle_distance_blue, angle_distance_yellow)
         self.get_logger().info(f"angle is {angle}")
 
-        self.twist.linear.x = min(Controller.LINEAR_DRIVE_SPEED_START * Controller.LINEAR_DRIVE_BASE**self.drive_counter, Controller.LINEAR_DRIVE_SPEED_MAX)
-        self.twist.angular.z = angle * (1 if (angle > 0) else -1) * 0.1
+        self.twist.linear.x = min(self.drive_linear_speed_start * self.drive_linear_speed_basis**self.drive_counter, self.drive_linear_speed_max)
+        self.twist.angular.z = min(angle * (1 if (angle > 0) else -1) * 0.1, self.drive_angular_speed_max)
 
         self.orientate_counter = 0
         self.drive_counter += 1
