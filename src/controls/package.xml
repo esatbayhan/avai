@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>controls</name>
-  <version>0.0.0</version>
+  <version>0.0.1</version>
   <description>Controls the turtlebot3 based on the avai stack</description>
   <maintainer email="esat.bayhan@rub.de">ubuntu</maintainer>
   <license>MIT</license>
