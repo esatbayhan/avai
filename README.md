@@ -9,27 +9,21 @@
   - `rosdep install --from-paths src --ignore-src -r -y`
 
 ## Stack
-### Currently
+### Basis
 TurtleBot3
 1. Start Camera `ros2 run campkg camera`
 2. Start Camera Processing `ros2 run campkg processing`
+3. Start Heartbeat (Emergency Stop) `ros2 run controls heartbeat`
 
 Computer
 
-3. Start Cone Detection `ros2 run perception detector`
-4. Start LiDAR Filter `ros2 run lidar_filter filter`
-
-### Future
-Computer
-
-5. Calculate and publish Waypoints based on LaserScan published by lidar_filter.filter
-6. Subscribe Waypoints and move TurtleBot3 to specified Waypoint
+4. Start Cone Detection `ros2 run perception detector`
+5. Start Controller (Autonomous Driving) `ros2 launch controls turtlebot3_burger.launch.py`
 
 ## Simulation
 1. Start Simulation `ros2 launch turtlebot3_gazebo track_1.launch.py`
 2. Start Simulated Camera `ros2 run campkg simcam`
 
 ## Demonstration
-### Simulation with Detection & LiDAR Filtering
-https://user-images.githubusercontent.com/69524126/178010672-4d66b507-c91b-4a6a-b23f-e7b26b3d5333.mp4
-
+### Simulation with Detection, Sensor Filtering, Waypoint calculation and autonomous driving
+https://user-images.githubusercontent.com/69524126/178964943-cebe4831-9a8c-4f18-9498-0b6279cd4a6b.mp4
