@@ -1,5 +1,5 @@
 from copy import deepcopy
-from math import asin, cos, radians, sqrt, sin
+from math import asin, cos, isnan, radians, sqrt, sin
 
 import numpy as np
 import rclpy
@@ -19,7 +19,7 @@ class Controller(Node):
     CONE_CLASS_BLUE = 0
     CONE_CLASS_ORANGE = 1
     CONE_CLASS_YELLOW = 2
-    ACCURACY_THRESHOLD = 0.4
+    ACCURACY_THRESHOLD = 0.6
     WIDTH_THRESHOLD = 0.04
     WIDTH_MIN, WIDTH_MAX = 0, 1
 
@@ -73,7 +73,8 @@ class Controller(Node):
         self.declare_parameter("orientation_angular_speed_basis", 1.1)
 
     def init_publisher_heartbeat(self, topic_name: str) -> bool:
-        self.publisher_heartbeat = self.create_publisher(Bool, topic_name, qos_profile=qos_profile_sensor_data)
+        self.publisher_heartbeat = self.create_publisher(
+            Bool, topic_name, qos_profile=qos_profile_sensor_data)
         self.create_timer(0.2, self.publish_heartbeat)
 
         return True
@@ -109,7 +110,8 @@ class Controller(Node):
         if len(topic_name) == 0:
             return False
 
-        self.publisher_controls = self.create_publisher(Twist, topic_name, self.publisher_queue_size)
+        self.publisher_controls = self.create_publisher(
+            Twist, topic_name, self.publisher_queue_size)
 
         return True
 
@@ -179,25 +181,41 @@ class Controller(Node):
 
     def subscribe_bounding_boxes(self, bounding_boxes: Float64MultiArray):
         # bounding_box: [center_x, center_y, width, height, accuracy, class, ...] Array is flattened
-        
+
         if type(bounding_boxes) != Float64MultiArray:
-            self.get_logger().info("bounding_boxes is not Float64MultiArray")
+            self.get_logger().warn(
+                f"bounding_boxes is not Float64MultiArray but {type(bounding_boxes)}")
             return
 
         if type(self.publisher_controls) != Publisher:
-            self.get_logger().info("self.publisher_controls is not Publisher")
+            self.get_logger().warn(
+                f"self.publisher_controls is not Publisher but {type(self.publisher_controls)}")
             return
 
-        angle_distance_blue, angle_distance_yellow = self.get_nearest_cones(bounding_boxes)
+        if type(self.laser_scan) != LaserScan:
+            self.get_logger().warn(
+                f"self.laser_scan is not LaserScan but {type(self.laser_scan)}")
+            return
+
+        angle_distance_blue, angle_distance_yellow = self.get_nearest_cones(
+            bounding_boxes, deepcopy(self.laser_scan))
 
         if angle_distance_blue == None:
             self.get_logger().info("angle_distance_blue is None")
-            self.orientate(True)
+            self.orientate(left=True)
             return
 
         if angle_distance_yellow == None:
             self.get_logger().info("angle_distance_yellow is None")
-            self.orientate(False)
+            self.orientate(left=False)
+            return
+
+        if angle_distance_blue[1] <= 0.0:
+            self.get_logger().warn("distance to blue cone is <= 0")
+            return
+
+        if angle_distance_yellow[1] <= 0.0:
+            self.get_logger().warn("distance to yellow cone is <= 0")
             return
 
         self.drive(angle_distance_blue, angle_distance_yellow)
@@ -205,23 +223,26 @@ class Controller(Node):
     def orientate(self, left: bool) -> None:
         if not left:
             left = -1
-        
-        self.twist.angular.z = left * min(self.orientation_angular_speed_start * self.orientation_angular_speed_basis**self.orientate_counter, self.orientation_angular_speed_max)
+
+        self.twist.angular.z = left * min(self.orientation_angular_speed_start *
+                                          self.orientation_angular_speed_basis**self.orientate_counter, self.orientation_angular_speed_max)
         self.twist.linear.x = self.orientation_linear_speed
 
         if self.orientate_counter > Controller.ORIENTATE_DRIVE_THRESHOLD:
             self.twist.linear.z = 0.0
 
         self.drive_counter = 0
-        self.orientate_counter += 1 
+        self.orientate_counter += 1
 
         self.publisher_controls.publish(self.twist)
 
     def drive(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
         angle = self.get_angle(angle_distance_blue, angle_distance_yellow)
 
-        self.twist.linear.x = min(self.drive_linear_speed_start * self.drive_linear_speed_basis**self.drive_counter, self.drive_linear_speed_max)
-        self.twist.angular.z = min(abs(angle) * 0.1, self.drive_angular_speed_max) * (1 if angle > 0 else -1)
+        self.twist.linear.x = min(self.drive_linear_speed_start *
+                                  self.drive_linear_speed_basis**self.drive_counter, self.drive_linear_speed_max)
+        self.twist.angular.z = min(
+            abs(angle) * 0.5, self.drive_angular_speed_max) * (1 if angle > 0 else -1)
 
         self.get_logger().info(f"Set angular speed to {self.twist.angular.z}")
 
@@ -231,19 +252,39 @@ class Controller(Node):
         self.publisher_controls.publish(self.twist)
 
     def get_angle(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
-        c = self.get_distance_between_cones(angle_distance_blue, angle_distance_yellow)
-        s_c = self.get_median_triangle_c(angle_distance_yellow[1], angle_distance_blue[1], c)
-        x_m = self.get_center_between_cones(angle_distance_blue, angle_distance_yellow)
+        """Returns the angle of the turtlebot and the middlepoint between the blue and yellow cone. If any calculation goes wrong it returns 0.0.
+
+        Args:
+            angle_distance_blue (tuple): (angle, distance) of the blue cone. Angle is in radians.
+            angle_distance_yellow (tuple): (angle, distance) of the yellow cone. Angle is in radians. 
+
+        Returns:
+            float: angle. Angle is in radians.
+        """
+        c = self.get_distance_between_cones(
+            angle_distance_blue, angle_distance_yellow)
+        s_c = self.get_median_triangle_c(
+            angle_distance_yellow[1], angle_distance_blue[1], c)
+        x_m = self.get_center_between_cones(
+            angle_distance_blue, angle_distance_yellow)
 
         if c == 0:
-            self.get_logger().warn(f"c is 0, angle_distance_blue is {angle_distance_blue}, angle_distance_yellow is: {angle_distance_yellow}")
+            self.get_logger().warn(
+                f"c is 0, angle_distance_blue is {angle_distance_blue}, angle_distance_yellow is: {angle_distance_yellow}")
             return 0.0
 
         if s_c == 0:
             self.get_logger().info("s_c is 0")
             return 0.0
 
+        if x_m == 0:
+            self.get_logger().info("x_m is 0")
+            return 0.0
+
         angle = asin(abs(x_m) / s_c)
+
+        if isnan(angle):
+            return 0.0
 
         if x_m < 0:
             angle = -angle
@@ -251,28 +292,31 @@ class Controller(Node):
         return angle
 
     def get_median_triangle_c(self, a: float, b: float, c: float) -> float:
-        return sqrt(2 * (a*a + b*b) - c*c) / 2
+        # https://de.wikipedia.org/wiki/Seitenhalbierende#Eigenschaften
+        return sqrt(2 * (a**2 + b**2) - c**2) / 2
 
     def get_distance_between_cones(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
+        # https://de.wikipedia.org/wiki/Kosinussatz#Allgemeine_Formulierung
         alpha, a = angle_distance_yellow
         beta, b = angle_distance_blue
 
         alpha = abs(alpha)
         beta = abs(beta)
 
-        if a == b == 0:
-            self.get_logger().warn("Inside get_distance_between_cones, a = b = 0")
-        
-        return sqrt(a*a + b*b - 2*a*b*cos(radians(alpha + beta)))
+        return sqrt(a*a + b*b - 2*a*b*cos(alpha + beta))
 
-    def get_nearest_cones(self, bounding_boxes: Float64MultiArray) -> tuple:
-        if type(self.laser_scan) != LaserScan:
-            self.get_logger().info("self.laser_scan is not LaserScan")
-            return (None, None)
+    def get_nearest_cones(self, bounding_boxes: Float64MultiArray, laser_scan: LaserScan) -> tuple:
+        """Match bounding box of a cone with data from the LiDAR and return the nearest blue and yellow cone.
 
-        laser_scan = deepcopy(self.laser_scan)
-        angle_distance_blue = []
-        angle_distance_yellow = []
+        Args:
+            bounding_boxes (Float64MultiArray): Flattened array of cone bounding boxes. [center_x, center_y, width, height, accuracy, class, ...]
+            laser_scan (LaserScan): Current datapoints of the LiDAR sensor
+
+        Returns:
+            tuple: ((angle_blue_cone, distance_blue_cone), (angle_yellow_cone, distance_yellow_cone)). Angles are in radians. Distances are in meters.
+        """
+        angle_distance_blue_cones = []
+        angle_distance_yellow_cones = []
 
         for i in range(len(bounding_boxes.data) // 6):
             center_x, cy, width, h, accuracy, cone_class = bounding_boxes.data[i*6:i*6 + 6]
@@ -289,25 +333,27 @@ class Controller(Node):
                 continue
 
             if cone_class == Controller.CONE_CLASS_BLUE:
-                angle_distance = angle_distance_blue
+                angle_distance = angle_distance_blue_cones
             elif cone_class == Controller.CONE_CLASS_YELLOW:
-                angle_distance = angle_distance_yellow
+                angle_distance = angle_distance_yellow_cones
             else:
                 continue
 
-            angle_distance.append((index, laser_scan.ranges[index]))
+            angle_distance.append((radians(index), laser_scan.ranges[index]))
 
-        angle_distance_blue = min(angle_distance_blue, key=lambda angle_distance: angle_distance[1], default=None)
-        angle_distance_yellow = min(angle_distance_yellow, key=lambda angle_distance: angle_distance[1], default=None)
+        angle_distance_blue_nearest = min(
+            angle_distance_blue_cones, key=lambda angle_distance: angle_distance[1], default=None)
+        angle_distance_yellow_nearest = min(
+            angle_distance_yellow_cones, key=lambda angle_distance: angle_distance[1], default=None)
 
-        return (angle_distance_blue, angle_distance_yellow)
+        return (angle_distance_blue_nearest, angle_distance_yellow_nearest)
 
-    def get_center_between_cones(self, cone_blue: tuple, cone_yellow: tuple) -> float:
-        angle_blue, distance_blue = cone_blue
-        angle_yellow, distance_yellow = cone_yellow
+    def get_center_between_cones(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
+        angle_blue, distance_blue = angle_distance_blue
+        angle_yellow, distance_yellow = angle_distance_yellow
 
-        adjacent_blue = self.get_opposite(distance_blue, radians(abs(angle_blue)))
-        adjacent_yellow = self.get_opposite(distance_yellow, radians(abs(angle_yellow)))
+        adjacent_blue = self.get_opposite(distance_blue, abs(angle_blue))
+        adjacent_yellow = self.get_opposite(distance_yellow, abs(angle_yellow))
 
         if angle_blue < 0:
             adjacent_blue = -adjacent_blue
