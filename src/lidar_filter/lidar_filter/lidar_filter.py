@@ -149,14 +149,6 @@ class LidarFilter(Node):
                 scan.intensities[index +
                                  shift] = laser_scan.intensities[index+shift]
 
-        self.get_logger().info(f"{laser_scan_blue.ranges}")
-
-        # with open("~/blue", "a") as f:
-        #     f.write(f"{laser_scan_blue.ranges}")
-
-        # with open("~/yellow", "a") as f:
-        #     f.write(f"{laser_scan_yellow.ranges}")
-
         self.publisher_laser_scan_blue.publish(laser_scan_blue)
         self.publisher_laser_scan_yellow.publish(laser_scan_yellow)
 
