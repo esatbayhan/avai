@@ -29,6 +29,8 @@ class Controller(Node):
 
     ORIENTATE_DRIVE_THRESHOLD = 4.0
 
+    RELATIVE_DISTANCE_CONES_THRESHOLD = 3.0
+
     def __init__(self):
         super().__init__("controller")
         self.subscriber_queue_size = 2
@@ -216,6 +218,16 @@ class Controller(Node):
 
         if angle_distance_yellow[1] <= 0.0:
             self.get_logger().warn("distance to yellow cone is <= 0")
+            return
+
+        if angle_distance_blue[1] >= angle_distance_yellow[1] * Controller.RELATIVE_DISTANCE_CONES_THRESHOLD:
+            self.get_logger().info(f"blue cone is to far away: blue cone {angle_distance_blue}, yellow cone: {angle_distance_yellow}")
+            self.orientate(left=True)
+            return
+
+        if angle_distance_yellow[1] >= angle_distance_blue[1] * Controller.RELATIVE_DISTANCE_CONES_THRESHOLD:
+            self.get_logger().info(f"yellow cone is to far away: yellow cone {angle_distance_blue}, blue cone: {angle_distance_yellow}")
+            self.orientate(left=False)
             return
 
         self.drive(angle_distance_blue, angle_distance_yellow)
