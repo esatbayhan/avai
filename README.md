@@ -9,7 +9,6 @@
   - `rosdep install --from-paths src --ignore-src -r -y`
 
 ## Stack
-### Basis
 TurtleBot3
 1. Start Camera `ros2 run campkg camera`
 2. Start Camera Processing `ros2 run campkg processing`
