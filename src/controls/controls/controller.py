@@ -1,9 +1,8 @@
 from copy import deepcopy
-from math import asin, cos, isnan, radians, sqrt, sin
+from math import asin, cos, isnan, radians, sin, sqrt
 
-import numpy as np
 import rclpy
-from geometry_msgs.msg import Twist, Vector3
+from geometry_msgs.msg import Twist
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -221,12 +220,14 @@ class Controller(Node):
             return
 
         if angle_distance_blue[1] >= angle_distance_yellow[1] * Controller.RELATIVE_DISTANCE_CONES_THRESHOLD:
-            self.get_logger().info(f"blue cone is to far away: blue cone {angle_distance_blue}, yellow cone: {angle_distance_yellow}")
+            self.get_logger().info(
+                f"blue cone is to far away: blue cone {angle_distance_blue}, yellow cone: {angle_distance_yellow}")
             self.orientate(left=True)
             return
 
         if angle_distance_yellow[1] >= angle_distance_blue[1] * Controller.RELATIVE_DISTANCE_CONES_THRESHOLD:
-            self.get_logger().info(f"yellow cone is to far away: yellow cone {angle_distance_blue}, blue cone: {angle_distance_yellow}")
+            self.get_logger().info(
+                f"yellow cone is to far away: yellow cone {angle_distance_blue}, blue cone: {angle_distance_yellow}")
             self.orientate(left=False)
             return
 
