@@ -4,6 +4,9 @@ log/
 
 **/*.pyc
 
+# PyCharm
+.idea/
+
 # Submodules without fork
 src/DynamixelSDK/
 src/turtlebot3/
