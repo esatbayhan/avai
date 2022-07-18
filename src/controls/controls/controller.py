@@ -59,7 +59,7 @@ class Controller(Node):
         self.declare_parameter("publisher_name_heartbeat", "heartbeat")
         self.declare_parameter("subscriber_laser_scan", "scan")
         self.declare_parameter("subscriber_bounding_boxes", "bounding_boxes")
-        self.declare_parameter("publisher_controls", "cmd_vel")
+        self.declare_parameter("publisher_controls", "commandos")
 
         # Drive
         self.declare_parameter("drive_linear_speed_start", 0.2)
@@ -387,14 +387,6 @@ class Controller(Node):
     def map_range_to(self, input_start, input_end, output_start, output_end, value):
         # https://stackoverflow.com/questions/5731863/mapping-a-numeric-range-onto-another
         return output_start + ((output_end - output_start) / (input_end - input_start)) * (value - input_start)
-
-    def destroy_node(self) -> bool:
-        for subscription in self.subscriptions:
-            subscription.destroy()
-
-        self.publisher_controls.publish(Twist())
-
-        return super().destroy_node()
 
 
 def main(args=None):
