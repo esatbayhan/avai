@@ -9,6 +9,10 @@
         "scripts/": true,
         ".gitpod.yml": true,
 
+        // editor files
+        ".idea/": true,
+        ".vscode/": true,
+
         // submodules
         "src/DynamixelSDK": true,
         "src/turtlebot3": true,

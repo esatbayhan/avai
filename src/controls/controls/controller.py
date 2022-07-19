@@ -36,7 +36,7 @@ class Controller(Node):
         self.publisher_queue_size = 0
 
         self.laser_scan = None
-        self.publisher_controls = None
+        self.publisher_commandos = None
 
         self.twist = Twist()
         self.orientate_counter = 0
@@ -57,9 +57,9 @@ class Controller(Node):
         self.add_on_set_parameters_callback(self.init_parameters)
 
         self.declare_parameter("publisher_name_heartbeat", "heartbeat")
-        self.declare_parameter("subscriber_laser_scan", "scan")
-        self.declare_parameter("subscriber_bounding_boxes", "bounding_boxes")
-        self.declare_parameter("publisher_controls", "cmd_vel")
+        self.declare_parameter("subscriber_name_laser_scan", "scan")
+        self.declare_parameter("subscriber_name_bounding_boxes", "bounding_boxes")
+        self.declare_parameter("publisher_name_commandos", "commandos")
 
         # Drive
         self.declare_parameter("drive_linear_speed_start", 0.2)
@@ -104,14 +104,14 @@ class Controller(Node):
 
         return type(self.create_subscription(Float64MultiArray, topic_name, self.subscribe_bounding_boxes, self.subscriber_queue_size)) == Subscription
 
-    def init_publisher_controls(self, topic_name: str) -> bool:
+    def init_publisher_commandos(self, topic_name: str) -> bool:
         if type(topic_name) != str:
             return False
 
         if len(topic_name) == 0:
             return False
 
-        self.publisher_controls = self.create_publisher(
+        self.publisher_commandos = self.create_publisher(
             Twist, topic_name, self.publisher_queue_size)
 
         return True
@@ -130,15 +130,15 @@ class Controller(Node):
             if param.name == "publisher_name_heartbeat":
                 results.append(self.initializer(
                     param, (Parameter.Type.STRING,), self.init_publisher_heartbeat))
-            elif param.name == "subscriber_laser_scan":
+            elif param.name == "subscriber_name_laser_scan":
                 results.append(self.initializer(
                     param, (Parameter.Type.STRING,), self.init_subscriber_laser_scan))
-            elif param.name == "subscriber_bounding_boxes":
+            elif param.name == "subscriber_name_bounding_boxes":
                 results.append(self.initializer(
                     param, (Parameter.Type.STRING,), self.init_subscriber_bounding_boxes))
-            elif param.name == "publisher_controls":
+            elif param.name == "publisher_name_commandos":
                 results.append(self.initializer(
-                    param, (Parameter.Type.STRING,), self.init_publisher_controls))
+                    param, (Parameter.Type.STRING,), self.init_publisher_commandos))
 
             # Drive Parameters
             elif param.name == "drive_linear_speed_start" and param.type_ == Parameter.Type.DOUBLE:
@@ -188,9 +188,9 @@ class Controller(Node):
                 f"bounding_boxes is not Float64MultiArray but {type(bounding_boxes)}")
             return
 
-        if type(self.publisher_controls) != Publisher:
+        if type(self.publisher_commandos) != Publisher:
             self.get_logger().warn(
-                f"self.publisher_controls is not Publisher but {type(self.publisher_controls)}")
+                f"self.publisher_commandos is not Publisher but {type(self.publisher_commandos)}")
             return
 
         if type(self.laser_scan) != LaserScan:
@@ -247,7 +247,7 @@ class Controller(Node):
         self.drive_counter = 0
         self.orientate_counter += 1
 
-        self.publisher_controls.publish(self.twist)
+        self.publisher_commandos.publish(self.twist)
 
     def drive(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
         angle = self.get_angle(angle_distance_blue, angle_distance_yellow)
@@ -262,7 +262,7 @@ class Controller(Node):
         self.orientate_counter = 0
         self.drive_counter += 1
 
-        self.publisher_controls.publish(self.twist)
+        self.publisher_commandos.publish(self.twist)
 
     def get_angle(self, angle_distance_blue: tuple, angle_distance_yellow: tuple) -> float:
         """Returns the angle of the turtlebot and the middlepoint between the blue and yellow cone. If any calculation goes wrong it returns 0.0.
@@ -387,14 +387,6 @@ class Controller(Node):
     def map_range_to(self, input_start, input_end, output_start, output_end, value):
         # https://stackoverflow.com/questions/5731863/mapping-a-numeric-range-onto-another
         return output_start + ((output_end - output_start) / (input_end - input_start)) * (value - input_start)
-
-    def destroy_node(self) -> bool:
-        for subscription in self.subscriptions:
-            subscription.destroy()
-
-        self.publisher_controls.publish(Twist())
-
-        return super().destroy_node()
 
 
 def main(args=None):
