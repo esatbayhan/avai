@@ -26,8 +26,6 @@ class Controller(Node):
     ANGLE_DEGREES_START = 31.1
     ANGLE_DEGREES_STOP = -31.1
 
-    RELATIVE_DISTANCE_CONES_THRESHOLD = 3.0
-
     def __init__(self):
         super().__init__("controller")
         self.subscriber_queue_size = 2
@@ -41,6 +39,9 @@ class Controller(Node):
         self.drive_counter = 0
 
         self.create_timer(0.2, self.publish_heartbeat)
+
+        # Filter
+        self.max_relative_distance_cones = 0.0
 
         # Drive
         self.drive_linear_speed_start, self.drive_linear_speed_max = 0.0, 0.0
@@ -59,6 +60,9 @@ class Controller(Node):
         self.declare_parameter("subscriber_name_laser_scan", "scan")
         self.declare_parameter("subscriber_name_bounding_boxes", "bounding_boxes")
         self.declare_parameter("publisher_name_commandos", "commandos")
+
+        # Filter
+        self.declare_parameter("max_relative_distance_cones", 3.0)
 
         # Drive
         self.declare_parameter("drive_linear_speed_start", 0.2)
@@ -140,6 +144,11 @@ class Controller(Node):
                 results.append(self.initializer(
                     param, (Parameter.Type.STRING,), self.init_publisher_commandos))
 
+            # Filter Parameters
+            elif param.name == "max_relative_distance_cones" and param.type_ == Parameter.Type.DOUBLE:
+                self.max_relative_distance_cones = param.value
+                results.append(True)
+            
             # Drive Parameters
             elif param.name == "drive_linear_speed_start" and param.type_ == Parameter.Type.DOUBLE:
                 self.drive_linear_speed_start = param.value
@@ -222,13 +231,13 @@ class Controller(Node):
             self.get_logger().warn("distance to yellow cone is <= 0")
             return
 
-        if angle_distance_blue[1] >= angle_distance_yellow[1] * Controller.RELATIVE_DISTANCE_CONES_THRESHOLD:
+        if angle_distance_blue[1] >= angle_distance_yellow[1] * self.max_relative_distance_cones:
             self.get_logger().info(
                 f"blue cone is to far away: blue cone {angle_distance_blue}, yellow cone: {angle_distance_yellow}")
             self.orientate(left=True)
             return
 
-        if angle_distance_yellow[1] >= angle_distance_blue[1] * Controller.RELATIVE_DISTANCE_CONES_THRESHOLD:
+        if angle_distance_yellow[1] >= angle_distance_blue[1] * self.max_relative_distance_cones:
             self.get_logger().info(
                 f"yellow cone is to far away: yellow cone {angle_distance_blue}, blue cone: {angle_distance_yellow}")
             self.orientate(left=False)
