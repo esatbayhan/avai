@@ -26,8 +26,6 @@ class Controller(Node):
     ANGLE_DEGREES_START = 31.1
     ANGLE_DEGREES_STOP = -31.1
 
-    ORIENTATE_DRIVE_THRESHOLD = 4.0
-
     RELATIVE_DISTANCE_CONES_THRESHOLD = 3.0
 
     def __init__(self):
@@ -53,6 +51,7 @@ class Controller(Node):
         self.orientation_linear_speed = 0.0
         self.orientation_angular_speed_start, self.orientation_angular_speed_max = 0.0, 0.0
         self.orientation_angular_basis = 0.0
+        self.orientation_counter_threshold = 0
 
         self.add_on_set_parameters_callback(self.init_parameters)
 
@@ -72,6 +71,7 @@ class Controller(Node):
         self.declare_parameter("orientation_angular_speed_start", 0.1)
         self.declare_parameter("orientation_angular_speed_max", 0.5)
         self.declare_parameter("orientation_angular_speed_basis", 1.1)
+        self.declare_parameter("orientation_counter_threshold", 30)
 
     def init_publisher_heartbeat(self, topic_name: str) -> bool:
         self.publisher_heartbeat = self.create_publisher(
@@ -167,6 +167,9 @@ class Controller(Node):
             elif param.name == "orientation_angular_speed_basis" and param.type_ == Parameter.Type.DOUBLE:
                 self.orientation_angular_speed_basis = param.value
                 results.append(True)
+            elif param.name == "orientation_counter_threshold" and param.type_ == Parameter.Type.INTEGER:
+                self.orientation_counter_threshold = param.value
+                results.append(True)
             else:
                 self.get_logger().warn(f"Could not identify parameter {param}")
                 results.append(False)
@@ -241,8 +244,8 @@ class Controller(Node):
                                           self.orientation_angular_speed_basis**self.orientate_counter, self.orientation_angular_speed_max)
         self.twist.linear.x = self.orientation_linear_speed
 
-        if self.orientate_counter > Controller.ORIENTATE_DRIVE_THRESHOLD:
-            self.twist.linear.z = 0.0
+        if self.orientate_counter > self.orientation_counter_threshold:
+            self.twist.linear.x = 0.0
 
         self.drive_counter = 0
         self.orientate_counter += 1
