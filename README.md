@@ -27,5 +27,6 @@ Computer
 ### Simulation with Detection, Sensor Filtering, Waypoint calculation and autonomous driving
 https://user-images.githubusercontent.com/69524126/178964943-cebe4831-9a8c-4f18-9498-0b6279cd4a6b.mp4
 
-### Live Demo
-[![Watch the video](https://img.youtube.com/vi/FBAPRbXJAZ4/maxresdefault.jpg)](https://youtu.be/FBAPRbXJAZ4)
+### Live Demo [Original](https://youtu.be/FBAPRbXJAZ4)
+https://user-images.githubusercontent.com/69524126/180600009-bc8a49ca-240a-4da5-812d-dd00b815a115.mp4
+
