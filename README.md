@@ -1,5 +1,8 @@
 # Autonomous Vehicles and Artificial Intelligence
 
+## Archived
+This repository has been archived. As the course has been finished there won't be any updates or bug fixes.
+
 ## Start Working
 - Follow the emanual of TurtleBot3 to install all tools (use foxy)
   - [emanual.robotis.com](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/#pc-setup)
@@ -7,6 +10,9 @@
   - `git clone --recurse-submodules -j8 https://github.com/esatbayhan/avai ~/colcon_ws`
 - Install all dependencies required by packages
   - `rosdep install --from-paths src --ignore-src -r -y`
+
+## Architecture
+![Architecture](./documents/architecture.svg)
 
 ## Stack
 TurtleBot3
