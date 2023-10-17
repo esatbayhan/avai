@@ -1,5 +1,13 @@
 # Autonomous Vehicles and Artificial Intelligence
 
+## Demonstration
+
+### Live Demo
+https://user-images.githubusercontent.com/69524126/180600009-bc8a49ca-240a-4da5-812d-dd00b815a115.mp4
+
+### Simulation with Detection, Sensor Filtering, Waypoint calculation and autonomous driving
+https://user-images.githubusercontent.com/69524126/178964943-cebe4831-9a8c-4f18-9498-0b6279cd4a6b.mp4
+
 ## Archived
 This repository has been archived. As the course has been finished there won't be any updates or bug fixes.
 
@@ -28,11 +36,3 @@ Computer
 ## Simulation
 1. Start Simulation `ros2 launch turtlebot3_gazebo track_1.launch.py`
 2. Start Simulated Camera `ros2 run campkg simcam`
-
-## Demonstration
-### Simulation with Detection, Sensor Filtering, Waypoint calculation and autonomous driving
-https://user-images.githubusercontent.com/69524126/178964943-cebe4831-9a8c-4f18-9498-0b6279cd4a6b.mp4
-
-### Live Demo [Original](https://youtu.be/FBAPRbXJAZ4)
-https://user-images.githubusercontent.com/69524126/180600009-bc8a49ca-240a-4da5-812d-dd00b815a115.mp4
-
